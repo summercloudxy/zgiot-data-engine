@@ -229,15 +229,28 @@ public class KepServerDataPlugin implements DataPlugin {
         // e.g.  "XG.XG.1303/PR/CURRENT/0"
         try {
             String dataLabel = item.getReadValueId().getNodeId().getIdentifier().toString();
-
             ThingMetricLabel tml = this.dataEngineService.getTMLByLabel(dataLabel);
+            if (tml == null) {
+                throw new RuntimeException("Cannot match label to std model, pls check db config. (label=`" + dataLabel + "`)");
+            }
 
-            data.setDataTimeStamp(value.getSourceTime().getJavaDate());
-            data.setThingCategoryCode(ThingModel.CATEGORY_DEVICE);
-            data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
-            data.setThingCode(tml.getThingCode());
-            data.setMetricCode(tml.getMetricCode());
-            data.setValue(value.getValue().getValue().toString());
+            if (value.getStatusCode().isGood()) {
+                data.setDataTimeStamp(value.getSourceTime().getJavaDate());
+                data.setThingCategoryCode(ThingModel.CATEGORY_DEVICE);
+                data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
+                data.setThingCode(tml.getThingCode());
+                data.setMetricCode(tml.getMetricCode());
+                data.setValue(value.getValue().getValue().toString());
+
+            } else {
+                logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
+                        , item.getReadValueId().getNodeId(), value.getStatusCode().toString());
+                data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
+                data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
+                data.setThingCode(tml.getThingCode());
+                data.setMetricCode(tml.getMetricCode());
+                data.setDataTimeStamp(new Date());
+            }
 
         } catch (Exception e) {
             logger.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "

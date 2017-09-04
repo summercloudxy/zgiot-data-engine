@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.common.ThreadManager;
+import com.zgiot.dataengine.dataprocessor.DataListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -20,9 +22,17 @@ import java.io.IOException;
 /**
  * A websocket server, waiting for client (such as 'app-server' ) registers.
  */
+@Component
 public class UpforwarderHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(UpforwarderHandler.class);
+
+    @Autowired
+    UpforwarderDataListener upforwarderDataListener;
+
+    public void setUpforwarderDataListener(UpforwarderDataListener upforwarderDataListener) {
+        this.upforwarderDataListener = upforwarderDataListener;
+    }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message)
@@ -38,39 +48,13 @@ public class UpforwarderHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         logger.info("Connected : " + session);
-        ThreadManager.getThreadPool().submit(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    /* wait for queue values and send out */
-                    DataModel data = QueueManager.getQueueCollected().poll();
-                    try {
-                        if (data == null) {
-                            Thread.sleep(100);
-                            continue;
-                        }
-
-                        // send message
-                        if (!session.isOpen()) {
-                            logger.warn("Websocket session '{}' is closed ", session);
-                            break;
-                        }
-
-                        String json = JSON.toJSONString(data);
-                        session.sendMessage(new TextMessage(json));
-
-                    } catch (Exception e) {
-                        logger.error("Error: ", e);
-                    }
-
-                }
-            }
-        });
+        upforwarderDataListener.addSession(session);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         try {
+            upforwarderDataListener.removeSession(session);
             session.close();
         } catch (IOException e) {
             logger.error("Cannot close session on afterConnectionClosed ");
@@ -82,8 +66,10 @@ public class UpforwarderHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception)
             throws Exception {
+        upforwarderDataListener.removeSession(session);
         session.close(CloseStatus.SERVER_ERROR);
         logger.error("Close session '{}' on handleTransportError ", session);
     }
+
 }
 

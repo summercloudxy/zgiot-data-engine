@@ -15,10 +15,11 @@ Welcome<br/>
 
 <script type="text/javascript">
     var websocket = null;
+    var itemCount = 0 ;
 
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
-        websocket = new WebSocket("ws://192.168.9.65:9090/data-engine/ws-dataengine");
+        websocket = new WebSocket("ws://"+ this.location.host+"/data-engine/ws-dataengine");
     }
     else {
         alert('Not support websocket')
@@ -36,6 +37,7 @@ Welcome<br/>
 
     //接收到消息的回调方法
     websocket.onmessage = function (event) {
+        itemCount++;
         setMessageInnerHTML(event.data);
     }
 
@@ -51,7 +53,8 @@ Welcome<br/>
 
     //将消息显示在网页上
     function setMessageInnerHTML(innerHTML) {
-        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+//        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+        document.getElementById('message').innerHTML = 'Items: '+ itemCount + '<br/>';
     }
 
     //关闭连接

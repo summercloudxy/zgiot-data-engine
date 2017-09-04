@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.sun.xml.internal.ws.api.message.Packet.State.ServerResponse;
-
 @RestController
 @RequestMapping(value = "/cmd")
 public class CmdSendController {
@@ -107,17 +105,6 @@ public class CmdSendController {
             throw new IllegalArgumentException("All data value should be type of 'java String'. ");
         }
 
-        switch (valueType) {
-            case MetricModel.VALUE_TYPE_BOOL:
-                d.setValue(Boolean.valueOf(oriValue));
-                break;
-            case MetricModel.VALUE_TYPE_SHORT:
-                d.setValue(Short.valueOf(oriValue));
-                break;
-            case MetricModel.VALUE_TYPE_FLOAT:
-                d.setValue(Float.valueOf(oriValue));
-                break;
-        }
-
+        d.setValue(DataModel.parseValueFromString(oriValue, valueType));
     }
 }

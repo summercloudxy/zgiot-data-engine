@@ -4,6 +4,7 @@ import com.zgiot.dataengine.dataplugin.DataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
 import com.zgiot.dataengine.common.ThreadManager;
+import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +23,16 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     private List<DataPlugin> dataPlugins;
 
     @Autowired
+    private DataProcessorManager dataProcessorManager;
+
+    @Autowired
     private KepServerDataPlugin kepServerDataCollecter;
     @Autowired
     private ExcelDataPlugin excelDataCollecter;
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
-
+            // TODO 配置需要加载的插件
             this.dataPlugins.clear();
 //            this.dataPlugins.add(this.kepServerDataCollecter);
             this.dataPlugins.add(this.excelDataCollecter);
@@ -51,6 +55,8 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
             logger.error("Failed to startup KepServer plugin! ", e);
             System.exit(2);
         }
+
+        dataProcessorManager.start();
     }
 
 }

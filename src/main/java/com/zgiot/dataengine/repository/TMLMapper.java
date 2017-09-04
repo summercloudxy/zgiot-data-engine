@@ -1,13 +1,9 @@
 package com.zgiot.dataengine.repository;
 
-import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
-import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
