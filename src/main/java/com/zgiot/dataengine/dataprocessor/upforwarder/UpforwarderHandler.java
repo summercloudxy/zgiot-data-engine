@@ -1,22 +1,14 @@
-package com.zgiot.dataengine.upforwarder;
+package com.zgiot.dataengine.dataprocessor.upforwarder;
 
-import com.alibaba.fastjson.JSON;
-import com.zgiot.common.pojo.DataModel;
-import com.zgiot.dataengine.common.queue.QueueManager;
-import com.zgiot.dataengine.common.ThreadManager;
-import com.zgiot.dataengine.dataprocessor.DataListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import javax.websocket.Session;
 import java.io.IOException;
 
 /**

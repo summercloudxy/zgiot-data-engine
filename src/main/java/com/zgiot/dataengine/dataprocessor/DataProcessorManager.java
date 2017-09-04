@@ -3,7 +3,6 @@ package com.zgiot.dataengine.dataprocessor;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.common.queue.QueueManager;
-import com.zgiot.dataengine.upforwarder.UpforwarderHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

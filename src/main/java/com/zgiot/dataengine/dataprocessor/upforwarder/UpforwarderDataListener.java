@@ -1,4 +1,4 @@
-package com.zgiot.dataengine.upforwarder;
+package com.zgiot.dataengine.dataprocessor.upforwarder;
 
 import com.alibaba.fastjson.JSON;
 import com.zgiot.common.pojo.DataModel;

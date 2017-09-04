@@ -1,4 +1,4 @@
-package com.zgiot.dataengine.upforwarder;
+package com.zgiot.dataengine.dataprocessor.upforwarder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;

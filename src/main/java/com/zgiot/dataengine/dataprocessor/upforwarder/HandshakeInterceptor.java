@@ -1,4 +1,4 @@
-package com.zgiot.dataengine.upforwarder;
+package com.zgiot.dataengine.dataprocessor.upforwarder;
 
 import java.util.Map;
 

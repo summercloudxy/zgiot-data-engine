@@ -2,8 +2,8 @@ package com.zgiot.dataengine.config;
 
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
 import com.zgiot.dataengine.dataprocessor.mongo.DataPersistMongoDbDataListener;
-import com.zgiot.dataengine.upforwarder.UpforwarderDataListener;
-import com.zgiot.dataengine.upforwarder.UpforwarderHandler;
+import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderDataListener;
+import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
