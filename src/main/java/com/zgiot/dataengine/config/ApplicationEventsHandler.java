@@ -1,6 +1,7 @@
 package com.zgiot.dataengine.config;
 
 import com.zgiot.dataengine.dataplugin.DataPlugin;
+import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
 import com.zgiot.dataengine.common.ThreadManager;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
+import sun.dc.pr.PRError;
 
 import java.util.List;
 
@@ -21,13 +23,15 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
 
     @Autowired
     private KepServerDataPlugin kepServerDataCollecter;
+    @Autowired
+    private ExcelDataPlugin excelDataCollecter;
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
 
             this.dataPlugins.clear();
-            this.dataPlugins.add(this.kepServerDataCollecter);
-
+//            this.dataPlugins.add(this.kepServerDataCollecter);
+            this.dataPlugins.add(this.excelDataCollecter);
             for (DataPlugin dataPlugin : dataPlugins){
                 dataPlugin.init();
                 dataPlugin.start();
