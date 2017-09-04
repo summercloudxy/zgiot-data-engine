@@ -27,6 +27,12 @@ server:
   context-path: /data-engine
 
 management.security.enabled: false
+
+excel:
+  uri: ${excel.uri}
+
+
+
 #logging:
 #  file: data-engine.log
 #  path: /tmp/logs

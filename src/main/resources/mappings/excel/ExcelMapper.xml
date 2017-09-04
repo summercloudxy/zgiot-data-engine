@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgiot.dataengine.dataplugin.excel.dao.ExcelMapper">
+    <resultMap id="ExcelRangeMap" type="com.zgiot.dataengine.dataplugin.excel.pojo.ExcelRange">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="system" column="system"/>
+        <result property="startX" column="start_x"/>
+        <result property="startY" column="start_y"/>
+        <result property="row" column="row"/>
+        <result property="readMode" column="read_mode"/>
+        <result property="timeGap" column="time_gap"/>
+        <result property="deviceIdGap" column="device_code_gap"/>
+        <result property="targetGap" column="target_gap"/>
+        <result property="aadGap" column="aad_gap"/>
+        <result property="mtGap" column="mt_gap"/>
+        <result property="stadGap" column="stad_gap"/>
+        <result property="qarGap" column="qar_gap"/>
+    </resultMap>
+
+    <select id="getExcelRange" resultMap="ExcelRangeMap">
+        SELECT id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap FROM excel_range WHERE state=1
+    </select>
+</mapper>
