@@ -93,7 +93,7 @@ public class ExcelDataPlugin implements DataPlugin {
                                 logger.info("找到新表格[" + sheet.getSheetName() + "],有[" + tlst.size() + "]条数据需要转换！");
                                 List<DataModel> dataModels = parseToDataModel(tlst);
                                 Queue q = QueueManager.getQueueCollected();
-                                q.add(dataModels);
+                                q.addAll(dataModels);
                                 logger.info("表格[" + sheet.getSheetName() + "]数据更新完毕,[" + dataModels.size() + "]条数据添加到队列！");
                                 total[0] += 1;
                                 total[1] += dataModels.size();
