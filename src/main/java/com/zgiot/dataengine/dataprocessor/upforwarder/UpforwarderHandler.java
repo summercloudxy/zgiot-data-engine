@@ -54,7 +54,6 @@ public class UpforwarderHandler extends TextWebSocketHandler {
         logger.info("afterConnectionClosed of session '{}'" , session);
     }
 
-
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception)
             throws Exception {
@@ -64,4 +63,3 @@ public class UpforwarderHandler extends TextWebSocketHandler {
     }
 
 }
-
