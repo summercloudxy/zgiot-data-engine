@@ -1,10 +1,13 @@
 package com.zgiot.dataengine.service.historydata;
 
 import com.zgiot.common.pojo.DataModel;
+import com.zgiot.dataengine.common.DEConstants;
 import com.zgiot.dataengine.common.pojo.MongoData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -23,6 +26,9 @@ public class HistoryDataServiceImpl implements HistoryDataService {
     @Autowired
     MongoTemplate mongoTemplate;
 
+    @Value("${spring.data.mongodb.uri:"+ DEConstants.NA+"}")
+    String mongoUri;
+
     public List<DataModel> findHistoryData(List<String> thingCodes, List<String> metricCodes, Date endDate) {
         return findHistoryDataList(thingCodes, metricCodes
                 , new Date(0), endDate);
@@ -31,6 +37,9 @@ public class HistoryDataServiceImpl implements HistoryDataService {
     public List<DataModel> findHistoryDataList(List<String> thingCodes, List<String> metricCodes
             , Date startDate, Date endDate) {
 
+        if (DEConstants.NA.equals(this.mongoUri)){
+            return new ArrayList<>();
+        }
         /* required index as  ts_tc_mc */
 
         Query q = new Query();
@@ -99,6 +108,9 @@ public class HistoryDataServiceImpl implements HistoryDataService {
             return 0;
         }
         try {
+            if (DEConstants.NA.equals(this.mongoUri)){
+                return 0;
+            }
             this.mongoTemplate.insert(list, MongoData.class);
         } catch (Exception e) {
             logger.error("Insert history data error: `{}`. ", e.getMessage());

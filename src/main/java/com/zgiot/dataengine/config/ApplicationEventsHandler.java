@@ -8,15 +8,21 @@ import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class ApplicationEventsHandler implements ApplicationListener<ContextRefreshedEvent> {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationEventsHandler.class);
+
+    @Value("${dataengine.plugins}")
+    String pluginsStr;
 
     @Autowired
     private List<DataPlugin> dataPlugins;
@@ -25,17 +31,24 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     private DataProcessorManager dataProcessorManager;
 
     @Autowired
-    private KepServerDataPlugin kepServerDataCollecter;
+    private KepServerDataPlugin kepServerDataPlugin;
     @Autowired
-    private ExcelDataPlugin excelDataCollecter;
+    private ExcelDataPlugin excelDataPlugin;
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
-            // TODO 配置需要加载的插件
-            this.dataPlugins.clear();
-//            this.dataPlugins.add(this.kepServerDataCollecter);
-            this.dataPlugins.add(this.excelDataCollecter);
-            for (DataPlugin dataPlugin : dataPlugins){
+            // init plugin clazz map
+            Map<String,DataPlugin> map = new HashMap<>();
+            map.put("NONE",null);
+            map.put("KEPSERVER", kepServerDataPlugin);
+            map.put("EXCEL", excelDataPlugin);
+
+            String[] pluginNameArr = this.pluginsStr.split(",");
+            for (String str: pluginNameArr){
+                DataPlugin dataPlugin = map.get(str.trim());
+                if (dataPlugin == null)
+                    continue;
+
                 dataPlugin.init();
                 dataPlugin.start();
             }

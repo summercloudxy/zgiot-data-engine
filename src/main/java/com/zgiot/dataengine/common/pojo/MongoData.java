@@ -63,7 +63,7 @@ public class MongoData {
         this.ts = ts;
     }
 
-    public static DataModel convertToDataModel(MongoData obj){
+    public static DataModel convertToDataModel(MongoData obj) {
         DataModel dest = new DataModel();
         dest.setDataTimeStamp(new Date(obj.getTs()));
         dest.setMetricCategoryCode(obj.getMcc());
@@ -74,14 +74,17 @@ public class MongoData {
         return dest;
     }
 
-    public static MongoData convertFromDataModel(DataModel src){
+    public static MongoData convertFromDataModel(DataModel src) {
         MongoData dest = new MongoData();
         dest.setTs(src.getDataTimeStamp().getTime());
         dest.setMcc(src.getMetricCategoryCode());
         dest.setMc(src.getMetricCode());
         dest.setTcc(src.getThingCategoryCode());
         dest.setTc(src.getThingCode());
-        dest.setV(src.getValue().toString());
+
+        if (src.getValue() != null) {
+            dest.setV(String.valueOf(src.getValue()));
+        }
         return dest;
     }
 }
