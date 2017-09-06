@@ -45,7 +45,7 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
 
             String[] pluginNameArr = this.pluginsStr.split(",");
             for (String str: pluginNameArr){
-                DataPlugin dataPlugin = map.get(str);
+                DataPlugin dataPlugin = map.get(str.trim());
                 if (dataPlugin == null)
                     continue;
 

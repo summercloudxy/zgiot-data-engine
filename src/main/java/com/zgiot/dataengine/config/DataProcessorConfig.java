@@ -44,7 +44,7 @@ public class DataProcessorConfig {
         DataProcessorManager obj = new DataProcessorManager();
         String[] configArr = this.configDataListeners.split(",");
         for (String str : configArr) {
-            DataListener dl = map.get(str);
+            DataListener dl = map.get(str.trim());
             if (dl == null) {
                 continue;
             }
