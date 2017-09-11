@@ -1,8 +1,8 @@
 spring:
   application:
     name: zgiot-data-engine
-  profiles:
-    active: dev
+  #profiles:
+  #  active: dev
 
   datasource:
     url: ${mysql.url}
@@ -31,3 +31,6 @@ management.security.enabled: false
 excel:
   uri: ${excel.uri}
 
+#logging:
+#  file: data-engine.log
+#  path: /tmp/logs
