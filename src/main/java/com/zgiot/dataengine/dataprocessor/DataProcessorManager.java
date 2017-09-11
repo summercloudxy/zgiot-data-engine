@@ -30,6 +30,10 @@ public class DataProcessorManager {
                         continue;
                     }
 
+                    if (logger.isTraceEnabled()){
+                        logger.trace("Got data: {}" , data.toString());
+                    }
+
                     invokeListeners(data);
 
                 } catch (Exception e) {

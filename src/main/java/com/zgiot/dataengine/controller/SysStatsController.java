@@ -19,6 +19,7 @@ public class SysStatsController {
     public ResponseEntity<String> sysStats() {
         LinkedHashMap map = new LinkedHashMap();
         map.put("q.fromplugin.size", QueueManager.getQueueCollected().size());
+        map.put("q.wss-buffer.size", QueueManager.getPreWss().size());
 
         return new ResponseEntity<String>(
                 JSON.toJSONString(map)

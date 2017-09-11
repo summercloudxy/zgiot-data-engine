@@ -59,16 +59,17 @@ public class UpforwarderDataListener implements DataListener {
                 // send message
                 if (!session.isOpen()) {
                     logger.warn("Websocket session '{}' is closed ", session);
-                    return;
+                    continue;
                 }
 
                 // get from buffer and send them
-                List<DataModel> list = new ArrayList(buffer.size());
+                List<DataModel> list = new ArrayList(buffer.size()+1000);
                 buffer.drainTo(list);
                 errorCounter.set(0);
 
-                if (list.size() == 0)
-                    break;
+                if (list.size() == 0) {
+                    break; // cancel this flush
+                }
 
                 for (DataModel dm : list) {
                     String json = JSON.toJSONString(dm);

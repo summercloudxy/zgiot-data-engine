@@ -58,8 +58,9 @@ public class DataEngineServiceImpl implements DataEngineService {
     @Override
     public ThingMetricLabel getTMLByLabel(String labelPath) {
         ThingMetricLabel o = label_ThingMetricCache.get(labelPath);
-        if (o == null)
+        if (o == null) {
             logger.warn("Not found metricCode for label '{}'", labelPath);
+        }
         return o;
     }
 
@@ -71,8 +72,9 @@ public class DataEngineServiceImpl implements DataEngineService {
     @Override
     public String getLabelByTM(String thingCode, String metricCode) {
         ThingMetricLabel o = thingMetric_LabelCache.get(thingCode + "_" + metricCode);
-        if (o == null)
+        if (o == null) {
             logger.warn("Not found label for thingCode {} and metricCode '{}'", thingCode, metricCode);
+        }
         return o.getLabelPath();
     }
 

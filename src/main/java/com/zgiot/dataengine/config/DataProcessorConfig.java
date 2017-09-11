@@ -5,6 +5,8 @@ import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
 import com.zgiot.dataengine.dataprocessor.mongo.DataPersistMongoDbDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +17,7 @@ import java.util.Map;
 
 @Configuration
 public class DataProcessorConfig {
-
+    private static final Logger logger = LoggerFactory.getLogger(DataProcessorConfig.class);
     @Value("${dataengine.datalisteners}")
     String configDataListeners;
 
@@ -50,6 +52,7 @@ public class DataProcessorConfig {
             }
 
             obj.getDataListeners().add(dl);
+            logger.info("DataListener added: {}" , dl.getClass());
         }
 
         return obj;

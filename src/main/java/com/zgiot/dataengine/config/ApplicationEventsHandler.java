@@ -38,19 +38,21 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
             // init plugin clazz map
-            Map<String,DataPlugin> map = new HashMap<>();
-            map.put("NONE",null);
+            Map<String, DataPlugin> map = new HashMap<>();
+            map.put("NONE", null);
             map.put("KEPSERVER", kepServerDataPlugin);
             map.put("EXCEL", excelDataPlugin);
 
             String[] pluginNameArr = this.pluginsStr.split(",");
-            for (String str: pluginNameArr){
+            for (String str : pluginNameArr) {
                 DataPlugin dataPlugin = map.get(str.trim());
-                if (dataPlugin == null)
+                if (dataPlugin == null) {
                     continue;
+                }
 
                 dataPlugin.init();
                 dataPlugin.start();
+                logger.info("Data plugin `{}` started. ", dataPlugin.getClass());
             }
 
             // init thread pool
@@ -69,6 +71,7 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
         }
 
         dataProcessorManager.start();
+        logger.info("Data processor started. ");
     }
 
 }
