@@ -34,9 +34,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -50,24 +48,26 @@ public class KepServerDataPlugin implements DataPlugin {
 
     private static final Logger logger = LoggerFactory.getLogger(KepServerDataPlugin.class);
 
+    private AtomicLong clientHandles = new AtomicLong(1L);
 
-    private final AtomicLong clientHandles = new AtomicLong(1L);
     @Autowired
     private OpcUaProperties opcUaProperties;
 
     private static OpcUaClient opcClient;
     private static AtomicBoolean opcClientConnected = new AtomicBoolean(false);
     private double subscriptionInterval = 1000.0; // 1s
+    private static final int RETRY_KEP_INTERVAL = 5000; // ms
     private static final int OPC_NAMESPACE_INDEX = 2;
 
     @Autowired
     private DataEngineService dataEngineService;
 
-    public void init() {
+    public void init() throws Exception {
         // create milo client
         try {
             dataEngineService.initCache();
             opcClient = createClient();
+            clientHandles.set(1l);
             opcClient.addSessionActivityListener(new SessionActivityListener() {
                 @Override
                 public void onSessionActive(UaSession session) {
@@ -79,21 +79,24 @@ public class KepServerDataPlugin implements DataPlugin {
                 @Override
                 public void onSessionInactive(UaSession session) {
                     logger.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
-                    // TODO reconnect
                     opcClientConnected.set(false);
 
-                    try {
-                        while (!opcClientConnected.get()) {
+                    while (!opcClientConnected.get()) {
+                        try {
+                            logger.warn("Will retry to start KepServer plugin in {}ms.", RETRY_KEP_INTERVAL);
+                            Thread.sleep(RETRY_KEP_INTERVAL);
+                            init();
                             start();
-                            Thread.sleep(10000);
+                        } catch (Exception e) {
+                            logger.error("OPC session failed.", e);
                         }
-                    } catch (Exception e) {
-                        logger.error("OPC session failed.", e);
                     }
+
+                    logger.info("KepServer connection resumed. ");
                 }
             });
         } catch (Exception e) {
-            logger.error("Failed when init KepServer plugin. ", e);
+            throw e;
         }
     }
 
@@ -172,6 +175,7 @@ public class KepServerDataPlugin implements DataPlugin {
         if (failedSubsLabelMap.size() > 0) {
             throw new RuntimeException("Failed subscription found, pls check your db/kepserver config and restart again! ");
         } else {
+            opcClientConnected.set(true);
             logger.info("Success to subscribe all labels. ");
         }
 
