@@ -4,6 +4,7 @@ public class ThingMetricLabel {
     private String thingCode;
     private String metricCode;
     private String labelPath;
+    private int enabled;
 
     public String getThingCode() {
         return thingCode;
@@ -27,5 +28,13 @@ public class ThingMetricLabel {
 
     public void setLabelPath(String labelPath) {
         this.labelPath = labelPath;
+    }
+
+    public int getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(int enabled) {
+        this.enabled = enabled;
     }
 }

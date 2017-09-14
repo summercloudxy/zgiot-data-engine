@@ -210,7 +210,9 @@ public class KepServerDataPlugin implements DataPlugin {
         List<ThingMetricLabel> srcList = this.dataEngineService.findAllTML();
         List<String> list = new ArrayList<>(srcList.size());
         for (ThingMetricLabel item : srcList) {
-            list.add(item.getLabelPath()); // e.g. "XG.XG.1303/PR/CURRENT/0"
+            if (item.getEnabled() == 1) {
+                list.add(item.getLabelPath()); // e.g. "XG.XG.1303/PR/CURRENT/0"
+            }
         }
         return list;
     }
@@ -244,7 +246,7 @@ public class KepServerDataPlugin implements DataPlugin {
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
                 data.setThingCode(tml.getThingCode());
                 data.setMetricCode(tml.getMetricCode());
-                data.setValue(value.getValue().getValue().toString());
+                data.setValue(parseOpcValueToString(value));
 
             } else {
                 logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
@@ -267,6 +269,12 @@ public class KepServerDataPlugin implements DataPlugin {
         return data;
     }
 
+    private String parseOpcValueToString(DataValue value){
+        // todo DINT for filterpress
+        NodeId node = value.getValue().getDataType().get();
+        return value.getValue().getValue().toString();
+    }
+
     public int sendCommands(List<DataModel> datalist) throws Exception {
 
         if (datalist == null || datalist.size() == 0) {
@@ -285,7 +293,7 @@ public class KepServerDataPlugin implements DataPlugin {
             NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
             nodeIds.add(nodeId);
 
-            DataValue v = new DataValue(new Variant(data.getValue())
+            DataValue v = new DataValue(new Variant(data.getValueObj())
                     , null, null);
             values.add(v);
 

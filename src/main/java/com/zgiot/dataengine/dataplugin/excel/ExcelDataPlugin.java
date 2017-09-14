@@ -394,7 +394,7 @@ public class ExcelDataPlugin implements DataPlugin {
         dataModel.setMetricCategoryCode(MetricModel.CATEGORY_ASSAY);
         dataModel.setMetricCode(metricCode);
         dataModel.setDataTimeStamp(coalTestRecord.getTime());
-        dataModel.setValue(value);
+        dataModel.setValue(String.valueOf(value));
         dataModels.add(dataModel);
     }
 

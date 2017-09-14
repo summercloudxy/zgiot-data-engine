@@ -53,7 +53,7 @@ public class CmdSendController {
             if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())
                     && ThingModel.CATEGORY_DEVICE.equals(thing.getThingCategoryCode())) {
                 // convert data type
-                convertDataType(d, metric.getValueType());
+                d.initValueByType(metric.getValueType());
                 continue;
             }
 
@@ -97,14 +97,4 @@ public class CmdSendController {
 
     }
 
-    void convertDataType(DataModel d, String valueType) {
-        String oriValue = null;
-        try {
-            oriValue = (String) d.getValue();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("All data value should be type of 'java String'. ");
-        }
-
-        d.setValue(DataModel.parseValueFromString(oriValue, valueType));
-    }
 }
