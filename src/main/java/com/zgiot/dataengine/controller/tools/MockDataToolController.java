@@ -1,5 +1,6 @@
 package com.zgiot.dataengine.controller.tools;
 
+import com.alibaba.fastjson.JSON;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.dataengine.common.queue.QueueManager;
 import org.slf4j.Logger;
@@ -7,12 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Queue;
 
 @RestController
@@ -20,6 +19,27 @@ import java.util.Queue;
 @Profile("dev")
 public class MockDataToolController {
     private static final Logger logger = LoggerFactory.getLogger(MockDataToolController.class);
+
+
+
+    /**
+     *
+     * @param bodyStr  like `[{"dt": 1505388766104, "mc": "FEED_OVER", "mcc": "SIG", "tc": "2496A", "tcc": "DVC", "v": "false"},{"dt": 1505388766104, "mc": "FEED_OVER", "mcc": "SIG", "tc": "2496", "tcc": "DVC", "v": "true"}]`
+     * @return
+     */
+    @RequestMapping(
+            value = "/mock",
+            method = RequestMethod.POST)
+    public ResponseEntity<String> mockBatch(@RequestBody String bodyStr) {
+        List<DataModel> list = JSON.parseArray(bodyStr,DataModel.class);
+        for (DataModel dd : list){
+            QueueManager.getQueueCollected().add(dd);
+        }
+
+        return new ResponseEntity<String>(
+                "Mocked item count: " + list.size()
+                , HttpStatus.OK);
+    }
 
     @RequestMapping(
             value = "/press",
