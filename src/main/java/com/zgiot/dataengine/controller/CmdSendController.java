@@ -37,7 +37,7 @@ public class CmdSendController {
         if (list.size() == 0) {
             return new ResponseEntity<String>(
                     JSON.toJSONString(new ServerResponse(
-                            "No request data.", SysException.EC_SUCCESS, String.valueOf(0)))
+                            "No request data.", SysException.EC_SUCCESS, 0))
                     , HttpStatus.OK);
         }
 
@@ -80,11 +80,11 @@ public class CmdSendController {
             }
 
             if (okCount < list.size()) {
-                ServerResponse res = new ServerResponse<String>("There are '" + okCount + "/"
+                ServerResponse res = new ServerResponse<>("There are '" + okCount + "/"
                         + list.size()
                         + "' successful commands, failed happened.  ", SysException.EC_UNKOWN
-                        , String.valueOf(okCount));
-                return new ResponseEntity<String>(
+                        , okCount);
+                return new ResponseEntity<>(
                         JSON.toJSONString(res)
                         , HttpStatus.INTERNAL_SERVER_ERROR);
             }
