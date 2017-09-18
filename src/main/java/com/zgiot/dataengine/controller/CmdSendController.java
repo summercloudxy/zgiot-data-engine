@@ -90,9 +90,8 @@ public class CmdSendController {
             }
         }
 
-        return new ResponseEntity<String>(
-                JSON.toJSONString(new ServerResponse(
-                        "Done", SysException.EC_SUCCESS, String.valueOf(okCount)))
+        return new ResponseEntity<>(
+                ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
 
     }
