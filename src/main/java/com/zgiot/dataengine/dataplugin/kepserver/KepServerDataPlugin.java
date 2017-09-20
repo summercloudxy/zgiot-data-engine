@@ -65,7 +65,6 @@ public class KepServerDataPlugin implements DataPlugin {
     public void init() throws Exception {
         // create milo client
         try {
-            dataEngineService.initCache();
             opcClient = createClient();
             clientHandles.set(1l);
             opcClient.addSessionActivityListener(new SessionActivityListener() {

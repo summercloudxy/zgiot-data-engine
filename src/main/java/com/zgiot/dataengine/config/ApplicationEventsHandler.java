@@ -5,6 +5,7 @@ import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
 import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
+import com.zgiot.dataengine.service.DataEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,18 +26,19 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     String pluginsStr;
 
     @Autowired
-    private List<DataPlugin> dataPlugins;
-
-    @Autowired
     private DataProcessorManager dataProcessorManager;
-
     @Autowired
     private KepServerDataPlugin kepServerDataPlugin;
     @Autowired
     private ExcelDataPlugin excelDataPlugin;
+    @Autowired
+    private DataEngineService dataEngineService;
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
+
+            dataEngineService.initCache();
+
             // init plugin clazz map
             Map<String, DataPlugin> map = new HashMap<>();
             map.put("NONE", null);
