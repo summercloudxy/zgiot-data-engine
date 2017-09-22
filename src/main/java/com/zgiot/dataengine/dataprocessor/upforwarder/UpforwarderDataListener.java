@@ -23,13 +23,22 @@ public class UpforwarderDataListener implements DataListener {
     private static List<WebSocketSession> sessions = new ArrayList<>();  // may multiple sessions in future
 
     public void addSession(WebSocketSession s) {
-        sessions.add(s);
+        synchronized (sessions) {
+            // multiple sessions will cause client reconnection got multip connections for duplicated data.
+            // not sure why, so only support single session to workaround as per now.
+            if (sessions.size() == 0) {
+                sessions.add(s);
+            }
+        }
+
         BlockingQueue<DataModel> buffer = (BlockingQueue) QueueManager.getPreWss();
         flushBuffer(buffer);
     }
 
     public void removeSession(WebSocketSession s) {
-        sessions.remove(s);
+        synchronized (sessions) {
+            sessions.remove(s);
+        }
     }
 
     @Override
@@ -54,11 +63,11 @@ public class UpforwarderDataListener implements DataListener {
     }
 
     private void flushBuffer(BlockingQueue<DataModel> buffer) {
-        if (sessions.size()==0){
-            return ;
+        if (sessions.size() == 0) {
+            return;
         }
 
-        List<DataModel> list = new ArrayList(buffer.size()+1000);
+        List<DataModel> list = new ArrayList(buffer.size() + 1000);
         buffer.drainTo(list);
         // get from buffer and send them
         errorCounter.set(0);
