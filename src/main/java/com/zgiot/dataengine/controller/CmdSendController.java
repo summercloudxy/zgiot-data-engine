@@ -1,6 +1,7 @@
 package com.zgiot.dataengine.controller;
 
 import com.alibaba.fastjson.JSON;
+import com.zgiot.common.constants.GlobalConstants;
 import com.zgiot.common.exceptions.SysException;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,13 +33,21 @@ public class CmdSendController {
     @RequestMapping(
             value = "/send",
             method = RequestMethod.POST)
-    public ResponseEntity<String> send(@RequestBody String bodyStr) {
+    public ResponseEntity<String> send(HttpServletRequest req, @RequestBody String bodyStr) {
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
+
         if (list.size() == 0) {
-            return new ResponseEntity<String>(
+            return new ResponseEntity<>(
                     JSON.toJSONString(new ServerResponse(
                             "No request data.", SysException.EC_SUCCESS, 0))
+                    , HttpStatus.OK);
+        }
+
+        Integer mockValue = handleMockExpectation(req);
+        if (mockValue != null) {
+            return new ResponseEntity<>(
+                    ServerResponse.buildOkJson(mockValue)
                     , HttpStatus.OK);
         }
 
@@ -79,7 +89,7 @@ public class CmdSendController {
                 throw new SysException(e.getMessage(), SysException.EC_UNKOWN, e);
             }
 
-            if (okCount < list.size()) {
+            if (okCount < list.size()) { // TODO milo msg
                 ServerResponse res = new ServerResponse<>("There are '" + okCount + "/"
                         + list.size()
                         + "' successful commands, failed happened.  ", SysException.EC_UNKOWN
@@ -94,6 +104,16 @@ public class CmdSendController {
                 ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
 
+
+    }
+
+    private Integer handleMockExpectation(HttpServletRequest req) {
+        String exp = req.getHeader(GlobalConstants.REQUEST_MOCK_EXP);
+        if (exp == null){
+            return null;
+        }
+
+        return Integer.valueOf(exp);
     }
 
 }
