@@ -7,5 +7,5 @@ import java.util.List;
 public interface DataPlugin {
     void init() throws Exception;
     void start() throws Exception;
-    int sendCommands(List<DataModel> datalist) throws Exception;
+    int sendCommands(List<DataModel> datalist, List<String> errors) throws Exception;
 }

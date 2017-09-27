@@ -51,7 +51,7 @@ public class ExcelDataPlugin implements DataPlugin {
     }
 
     @Override
-    public int sendCommands(List<DataModel> datalist) throws Exception {
+    public int sendCommands(List<DataModel> datalist, List<String> err) throws Exception {
         return 0;
     }
 

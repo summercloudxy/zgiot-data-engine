@@ -82,17 +82,18 @@ public class CmdSendController {
                     , SysException.EC_UNKOWN, categoryFails);
         } else {
             // send via KepServer
+            List<String> errors = new ArrayList<>(10);
             try {
-                //// core
-                okCount = this.kepServerDataCollecter.sendCommands(list);
+                // core
+                okCount = this.kepServerDataCollecter.sendCommands(list, errors);
             } catch (Exception e) {
                 throw new SysException(e.getMessage(), SysException.EC_UNKOWN, e);
             }
 
-            if (okCount < list.size()) { // TODO milo msg
+            if (okCount < list.size()) {
                 ServerResponse res = new ServerResponse<>("There are '" + okCount + "/"
                         + list.size()
-                        + "' successful commands, failed happened.  ", SysException.EC_UNKOWN
+                        + "' successful commands, failed happened. Errors from opc: `" + joinMsg(errors) + "` ", SysException.EC_UNKOWN
                         , okCount);
                 return new ResponseEntity<>(
                         JSON.toJSONString(res)
@@ -104,12 +105,29 @@ public class CmdSendController {
                 ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
 
+    }
 
+    private String joinMsg(List<String> errors) {
+        if (errors == null || errors.size() == 0) {
+            return "";
+        }
+
+        StringBuffer sb = new StringBuffer(1000);
+        boolean first = true;
+        for (String str : errors) {
+            if (!first) {
+                sb.append(" | ");
+            }
+            sb.append(str);
+            first = false;
+        }
+
+        return sb.toString();
     }
 
     private Integer handleMockExpectation(HttpServletRequest req) {
         String exp = req.getHeader(GlobalConstants.REQUEST_MOCK_EXP);
-        if (exp == null){
+        if (exp == null) {
             return null;
         }
 

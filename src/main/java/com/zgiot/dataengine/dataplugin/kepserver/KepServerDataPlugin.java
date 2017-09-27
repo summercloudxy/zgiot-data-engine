@@ -33,6 +33,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -274,7 +275,7 @@ public class KepServerDataPlugin implements DataPlugin {
         return value.getValue().getValue().toString();
     }
 
-    public int sendCommands(List<DataModel> datalist) throws Exception {
+    public int sendCommands(List<DataModel> datalist, @NotNull List<String> errors) throws Exception {
 
         if (datalist == null || datalist.size() == 0) {
             logger.warn("Send command list is empty. ({})", datalist);
@@ -301,7 +302,6 @@ public class KepServerDataPlugin implements DataPlugin {
         }
 
         // send
-
         CompletableFuture<List<StatusCode>> future = opcClient
                 .writeValues(nodeIds, values);
         List<StatusCode> statuses = future.get();
@@ -310,6 +310,8 @@ public class KepServerDataPlugin implements DataPlugin {
         for (StatusCode status : statuses) {
             if (status.isGood()) {
                 goodCount++;
+            }else{
+                errors.add(status.toString());
             }
         }
 
