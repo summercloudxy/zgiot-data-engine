@@ -5,7 +5,7 @@
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
-    <logger name="root" level="WARN"/>
+    <logger name="root" level="INFO"/>
 
     <logger name="com.zgiot.dataengine.dataprocessor.DataProcessorManager" level="TRACE" additivity="false">
         <appender-ref ref="CONSOLE"/>
