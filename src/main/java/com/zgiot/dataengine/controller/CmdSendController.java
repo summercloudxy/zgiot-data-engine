@@ -36,12 +36,20 @@ public class CmdSendController {
     public ResponseEntity<String> send(HttpServletRequest req, @RequestBody String bodyStr) {
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
-
         if (list.size() == 0) {
             return new ResponseEntity<>(
                     JSON.toJSONString(new ServerResponse(
-                            "No request data.", SysException.EC_SUCCESS, 0))
+                            "Not valid request data.", SysException.EC_UNKOWN, 0))
                     , HttpStatus.OK);
+        } else {
+            for (DataModel data : list) {
+                if (data.getThingCode() == null) { // means request body invalid
+                    ServerResponse res = new ServerResponse(
+                            "Not valid request data. The incoming req body: `" + bodyStr + "`", SysException.EC_UNKOWN, 0);
+                    String resJson = JSON.toJSONString(res);
+                    return new ResponseEntity<String>(resJson, HttpStatus.OK);
+                }
+            }
         }
 
         Integer mockValue = handleMockExpectation(req);
