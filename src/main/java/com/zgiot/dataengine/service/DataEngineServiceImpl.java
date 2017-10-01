@@ -80,19 +80,27 @@ public class DataEngineServiceImpl implements DataEngineService {
 
     @Override
     public ThingModel getThing(String code) {
-        ThingModel o = thingCache.get(code);
-        if (o == null) {
+        ThingModel o = null;
+
+        if (thingCache.containsKey(code)) {
+            o = thingCache.get(code);
+        } else {
             logger.warn("Thing code '{}' not found. ", code);
         }
+
         return o;
     }
 
     @Override
     public MetricModel getMetric(String code) {
-        MetricModel o = metricCache.get(code);
-        if (o == null) {
+        MetricModel o = null;
+
+        if (metricCache.containsKey(code)) {
+            o = metricCache.get(code);
+        } else {
             logger.warn("Metric code '{}' not found. ", code);
         }
+
         return o;
     }
 
