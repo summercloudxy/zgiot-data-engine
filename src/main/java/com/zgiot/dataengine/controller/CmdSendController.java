@@ -11,6 +11,7 @@ import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,7 +33,8 @@ public class CmdSendController {
 
     @RequestMapping(
             value = "/send",
-            method = RequestMethod.POST)
+            method = RequestMethod.POST,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> send(HttpServletRequest req, @RequestBody String bodyStr) {
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
@@ -99,13 +101,14 @@ public class CmdSendController {
             }
 
             if (okCount < list.size()) {
-                ServerResponse res = new ServerResponse<>("There are '" + okCount + "/"
+                String msg = "There are '" + okCount + "/"
                         + list.size()
-                        + "' successful commands, failed happened. Errors from opc: `" + joinMsg(errors) + "` ", SysException.EC_UNKOWN
+                        + "' successful commands, failed happened. Errors from opc: `" + joinMsg(errors) + "` ";
+                ServerResponse res = new ServerResponse<>(msg, SysException.EC_UNKOWN
                         , okCount);
                 return new ResponseEntity<>(
                         JSON.toJSONString(res)
-                        , HttpStatus.INTERNAL_SERVER_ERROR);
+                        , HttpStatus.OK);
             }
         }
 
