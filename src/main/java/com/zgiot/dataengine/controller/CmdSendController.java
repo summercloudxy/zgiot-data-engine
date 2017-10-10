@@ -89,7 +89,7 @@ public class CmdSendController {
         int okCount = 0;
         if (categoryFails.size() > 0) {
             throw new SysException("Only support KepServer cmd sending so far. Pls check your requests if contain other category. "
-                    , SysException.EC_UNKOWN, categoryFails);
+                    , SysException.EC_UNKOWN, 0);
         } else {
             // send via KepServer
             List<String> errors = new ArrayList<>(10);
@@ -97,7 +97,7 @@ public class CmdSendController {
                 // core
                 okCount = this.kepServerDataCollecter.sendCommands(list, errors);
             } catch (Exception e) {
-                throw new SysException(e.getMessage(), SysException.EC_UNKOWN, e);
+                throw new SysException(e.getMessage(), SysException.EC_UNKOWN, 0);
             }
 
             if (okCount < list.size()) {
