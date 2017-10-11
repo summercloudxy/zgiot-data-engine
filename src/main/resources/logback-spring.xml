@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+    <property name="LOG_FILE" value="${LOG_PATH}/${LOG_FILE_NAME}"/>
+
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <logger name="root" level="INFO"/>
+
+    <logger name="com.zgiot.dataengine.dataprocessor.DataProcessorManager" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <!--appender-ref ref="FILE"/-->
+    </logger>
+
+</configuration>

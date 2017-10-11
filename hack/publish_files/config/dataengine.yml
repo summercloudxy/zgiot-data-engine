@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: zgiot-data-engine
+  #profiles:
+  #  active: dev
+
+  datasource:
+    url: ${mysql.url}
+    username: ${mysql.username}
+    password: ${mysql.password}
+    driverClassName: com.mysql.jdbc.Driver
+    max-active: 20
+    max-idle: 5
+    min-idle: 2
+    initial-size: 5
+    test-on-borrow: true
+    validation-query: 'select 1'
+    test-while-idle: true
+    time-between-eviction-runs-millis: 30000
+
+mybatis:
+  mapper-locations: classpath:mappings/**/*.xml
+  config-location: classpath:mybatis-config.xml
+
+server:
+  port: 8080
+  context-path: /data-engine
+
+management.security.enabled: false
+
+excel:
+  uri: ${excel.uri}
+
+#logging:
+#  file: data-engine.log
+#  path: /tmp/logs
