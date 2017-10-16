@@ -85,7 +85,6 @@ public class HistoryDataServiceImpl implements HistoryDataService {
             dest.setDataTimeStamp(new Date(data.getTs()));
             dest.setMetricCategoryCode(data.getMcc());
             dest.setMetricCode(data.getMc());
-            dest.setThingCategoryCode(data.getTcc());
             dest.setThingCode(data.getTc());
             dest.setValue(data.getV());
 

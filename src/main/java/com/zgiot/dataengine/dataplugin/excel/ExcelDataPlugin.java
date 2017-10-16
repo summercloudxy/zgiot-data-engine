@@ -1,6 +1,7 @@
 package com.zgiot.dataengine.dataplugin.excel;
 
 import com.zgiot.common.constants.MetricCodes;
+import com.zgiot.common.enums.MetricDataTypeEnum;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
@@ -389,7 +390,7 @@ public class ExcelDataPlugin implements DataPlugin {
     private void getParamModel(List<DataModel> dataModels, CoalTestRecord coalTestRecord, String metricCode,
             Double value) {
         DataModel dataModel = new DataModel();
-        dataModel.setThingCategoryCode(ThingModel.CATEGORY_DEVICE);
+        dataModel.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_OK.getName());
         dataModel.setThingCode(coalTestRecord.getSample());
         dataModel.setMetricCategoryCode(MetricModel.CATEGORY_ASSAY);
         dataModel.setMetricCode(metricCode);

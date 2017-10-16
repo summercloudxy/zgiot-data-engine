@@ -11,7 +11,6 @@ public class MongoData {
     private String mc;
     private String tc;
     private String mcc;
-    private String tcc;
     private String v;
     private long ts;
 
@@ -39,14 +38,6 @@ public class MongoData {
         this.mcc = mcc;
     }
 
-    public String getTcc() {
-        return tcc;
-    }
-
-    public void setTcc(String tcc) {
-        this.tcc = tcc;
-    }
-
     public String getV() {
         return v;
     }
@@ -68,7 +59,6 @@ public class MongoData {
         dest.setDataTimeStamp(new Date(obj.getTs()));
         dest.setMetricCategoryCode(obj.getMcc());
         dest.setMetricCode(obj.getMc());
-        dest.setThingCategoryCode(obj.getTcc());
         dest.setThingCode(obj.getTc());
         dest.setValue(obj.getV());
         return dest;
@@ -79,7 +69,6 @@ public class MongoData {
         dest.setTs(src.getDataTimeStamp().getTime());
         dest.setMcc(src.getMetricCategoryCode());
         dest.setMc(src.getMetricCode());
-        dest.setTcc(src.getThingCategoryCode());
         dest.setTc(src.getThingCode());
 
         if (src.getValue() != null) {

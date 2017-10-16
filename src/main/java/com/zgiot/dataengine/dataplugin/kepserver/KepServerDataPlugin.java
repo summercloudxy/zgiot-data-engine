@@ -1,5 +1,6 @@
 package com.zgiot.dataengine.dataplugin.kepserver;
 
+import com.zgiot.common.enums.MetricDataTypeEnum;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
@@ -242,7 +243,7 @@ public class KepServerDataPlugin implements DataPlugin {
 
             if (value.getStatusCode().isGood()) {
                 data.setDataTimeStamp(value.getSourceTime().getJavaDate());
-                data.setThingCategoryCode(ThingModel.CATEGORY_DEVICE);
+                data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_OK.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
                 data.setThingCode(tml.getThingCode());
                 data.setMetricCode(tml.getMetricCode());
@@ -251,7 +252,7 @@ public class KepServerDataPlugin implements DataPlugin {
             } else {
                 logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
                         , item.getReadValueId().getNodeId(), value.getStatusCode().toString());
-                data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
+                data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
                 data.setThingCode(tml.getThingCode());
                 data.setMetricCode(tml.getMetricCode());
@@ -261,7 +262,7 @@ public class KepServerDataPlugin implements DataPlugin {
         } catch (Exception e) {
             logger.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "
                     , item.getReadValueId().getNodeId(), e.getMessage());
-            data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
+            data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
             data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
             data.setDataTimeStamp(new Date());
         }

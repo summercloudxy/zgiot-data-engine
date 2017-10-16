@@ -70,16 +70,14 @@ public class CmdSendController {
             MetricModel metric = this.dataEngineService.getMetric(d.getMetricCode());
 
             // validate category
-            if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())
-                    && ThingModel.CATEGORY_DEVICE.equals(thing.getThingCategoryCode())) {
+            if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())) {
                 // convert data type
                 d.initValueByType(metric.getValueType());
                 continue;
             }
 
             // invalid action
-            categoryFails.add("Thing(category='" + thing.getThingCategoryCode()
-                    + "', code='" + thing.getThingCode()
+            categoryFails.add("Thing(code='" + thing.getThingCode()
                     + "') and Metric(category='" + metric.getMetricCategoryCode()
                     + "', code='" + metric.getMetricCode()
                     + "') is not supported to send. ");

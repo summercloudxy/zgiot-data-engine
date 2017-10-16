@@ -107,7 +107,7 @@ public class HistoryDataToolController {
                         dest.setDataTimeStamp(new Date(startDate + 1));
                         dest.setMetricCategoryCode("SIG");
                         dest.setMetricCode("CR0");
-                        dest.setThingCategoryCode("DEV");
+                        dest.setMetricDataType("DEV");
                         dest.setThingCode("1111");
                         dest.setValue(String.valueOf(i));
 
@@ -161,7 +161,7 @@ public class HistoryDataToolController {
                 dest.setDataTimeStamp(new Date(System.currentTimeMillis() + i));
                 dest.setMetricCategoryCode("SIG");
                 dest.setMetricCode("CR0");
-                dest.setThingCategoryCode("DEV");
+                dest.setMetricDataType("DEV");
                 dest.setThingCode("1111");
                 dest.setValue(String.valueOf(i));
 
