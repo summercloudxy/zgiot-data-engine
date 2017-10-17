@@ -8,6 +8,7 @@ import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.common.restcontroller.ServerResponse;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
+import com.zgiot.dataengine.repository.ThingMetricLabel;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -68,11 +69,12 @@ public class CmdSendController {
             // overide category value
             ThingModel thing = this.dataEngineService.getThing(d.getThingCode());
             MetricModel metric = this.dataEngineService.getMetric(d.getMetricCode());
+            ThingMetricLabel tml = this.dataEngineService.getTMLByTM(d.getThingCode(), d.getMetricCode());
 
             // validate category
             if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())) {
                 // convert data type
-                d.initValueByType(metric.getValueType());
+                convertData(d, metric, tml);
                 continue;
             }
 
@@ -114,6 +116,21 @@ public class CmdSendController {
                 ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
 
+    }
+
+    void convertData(DataModel d, MetricModel metric, ThingMetricLabel tml) {
+        // parse from string
+        if (d.getValueObj() == null) {
+            d.setValueObj(DataModel.parseValueFromString(d.getValue(), metric.getValueType()));
+        }
+
+        if (MetricModel.VALUE_TYPE_BOOL.equals(metric.getValueType())
+                && tml.getBoolReverse() == 1) { // if boolean value, do revert or not
+            Boolean src = (Boolean) d.getValueObj();
+            Boolean dest = !src.booleanValue();
+            d.setValueObj(dest);
+            d.setValue(String.valueOf(dest));
+        }
     }
 
     private String joinMsg(List<String> errors) {

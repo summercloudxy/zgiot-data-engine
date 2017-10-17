@@ -70,12 +70,12 @@ public class DataEngineServiceImpl implements DataEngineService {
     }
 
     @Override
-    public String getLabelByTM(String thingCode, String metricCode) {
+    public ThingMetricLabel getTMLByTM(String thingCode, String metricCode) {
         ThingMetricLabel o = thingMetric_LabelCache.get(thingCode + "_" + metricCode);
         if (o == null) {
             logger.warn("Not found label for thingCode {} and metricCode '{}'", thingCode, metricCode);
         }
-        return o.getLabelPath();
+        return o;
     }
 
     @Override

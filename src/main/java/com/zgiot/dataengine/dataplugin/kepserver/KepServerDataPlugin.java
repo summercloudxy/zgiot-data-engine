@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
 import java.util.*;
@@ -241,13 +240,17 @@ public class KepServerDataPlugin implements DataPlugin {
                 throw new RuntimeException("Cannot match label to std model, pls check db config. (label=`" + dataLabel + "`)");
             }
 
+            MetricModel metricModel = this.dataEngineService.getMetric(tml.getMetricCode());
+
             if (value.getStatusCode().isGood()) {
                 data.setDataTimeStamp(value.getSourceTime().getJavaDate());
                 data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_OK.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
                 data.setThingCode(tml.getThingCode());
                 data.setMetricCode(tml.getMetricCode());
-                data.setValue(parseOpcValueToString(value));
+
+                // NodeId node = value.getValue().getDataType().get();  // check opc data type
+                data.setValue(parseOpcValueToString(value.getValue().getValue(), metricModel, tml));
 
             } else {
                 logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
@@ -270,10 +273,17 @@ public class KepServerDataPlugin implements DataPlugin {
         return data;
     }
 
-    private String parseOpcValueToString(DataValue value){
-        // todo DINT for filterpress
-        NodeId node = value.getValue().getDataType().get();
-        return value.getValue().getValue().toString();
+    String parseOpcValueToString(Object value, MetricModel metricModel, ThingMetricLabel tml) {
+        String destStr = null;
+        if (MetricModel.VALUE_TYPE_BOOL.equals(metricModel.getValueType())
+                && tml.getBoolReverse() == 1) { // if boolean value, do revert or not
+            Boolean src = (Boolean) value;
+            Boolean dest = !src.booleanValue();
+            destStr = String.valueOf(dest);
+        } else {
+            destStr = value.toString();
+        }
+        return destStr;
     }
 
     public int sendCommands(List<DataModel> datalist, @NotNull List<String> errors) throws Exception {
@@ -288,8 +298,9 @@ public class KepServerDataPlugin implements DataPlugin {
 
         for (DataModel data : datalist) {
             // parse data to label and value
-            String labelPath = this.dataEngineService.getLabelByTM(data.getThingCode()
+            ThingMetricLabel tml = this.dataEngineService.getTMLByTM(data.getThingCode()
                     , data.getMetricCode());
+            String labelPath = tml.getLabelPath();
 
             NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
             nodeIds.add(nodeId);
@@ -311,7 +322,7 @@ public class KepServerDataPlugin implements DataPlugin {
         for (StatusCode status : statuses) {
             if (status.isGood()) {
                 goodCount++;
-            }else{
+            } else {
                 errors.add(status.toString());
             }
         }

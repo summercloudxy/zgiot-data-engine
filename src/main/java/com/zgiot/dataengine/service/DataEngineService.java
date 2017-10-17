@@ -23,7 +23,7 @@ public interface DataEngineService {
      * @param metricCode
      * @return
      */
-    String getLabelByTM(String thingCode, String metricCode);
+    ThingMetricLabel getTMLByTM(String thingCode, String metricCode);
 
     ThingModel getThing(String code);
 

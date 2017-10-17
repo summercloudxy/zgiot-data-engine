@@ -4,6 +4,7 @@ public class ThingMetricLabel {
     private String thingCode;
     private String metricCode;
     private String labelPath;
+    private int boolReverse;  // 1 yes, 0 not
     private int enabled;
 
     public String getThingCode() {
@@ -36,5 +37,13 @@ public class ThingMetricLabel {
 
     public void setEnabled(int enabled) {
         this.enabled = enabled;
+    }
+
+    public int getBoolReverse() {
+        return boolReverse;
+    }
+
+    public void setBoolReverse(int boolReverse) {
+        this.boolReverse = boolReverse;
     }
 }
