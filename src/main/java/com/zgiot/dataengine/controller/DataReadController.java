@@ -27,7 +27,7 @@ public class DataReadController {
         DataModel dm = kepServerDataCollecter.syncRead(thingCode, metricCode);
 
         return new ResponseEntity<>(
-                ServerResponse.buildOkJson(dm)
+                ServerResponse.buildOkJson(dm.getValue())
                 , HttpStatus.OK);
     }
 
