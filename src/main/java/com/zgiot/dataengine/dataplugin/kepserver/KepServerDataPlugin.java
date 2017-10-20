@@ -176,11 +176,13 @@ public class KepServerDataPlugin implements DataPlugin {
 
         // check any failed
         if (failedSubsLabelMap.size() > 0) {
-            throw new RuntimeException("Failed subscription found, pls check your db/kepserver config and restart again! ");
+            //throw new RuntimeException("Failed subscription found, pls check your db/kepserver config and restart again! ");
+            logger.warn("Subscription failed found. Count is : {}", failedSubsLabelMap.size());
         } else {
-            opcClientConnected.set(true);
             logger.info("Success to subscribe all labels. ");
         }
+
+        opcClientConnected.set(true);
 
     }
 
