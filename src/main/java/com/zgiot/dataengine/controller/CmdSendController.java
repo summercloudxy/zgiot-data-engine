@@ -72,7 +72,7 @@ public class CmdSendController {
             ThingMetricLabel tml = this.dataEngineService.getTMLByTM(d.getThingCode(), d.getMetricCode());
 
             // validate category
-            if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())) {
+            if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode()) ) {
                 // convert data type
                 convertData(d, metric, tml);
                 continue;
