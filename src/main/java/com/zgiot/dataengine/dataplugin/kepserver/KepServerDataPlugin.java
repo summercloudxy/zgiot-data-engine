@@ -262,8 +262,6 @@ public class KepServerDataPlugin implements DataPlugin {
             } else {
                 logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
                         , nodeId, value.getStatusCode().toString());
-                data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
-                        , item.getReadValueId().getNodeId(), value.getStatusCode().toString());
                 data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
                 data.setThingCode(tml.getThingCode());
@@ -274,8 +272,6 @@ public class KepServerDataPlugin implements DataPlugin {
         } catch (Exception e) {
             logger.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "
                     , nodeId, e.getMessage());
-            data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
-                    , item.getReadValueId().getNodeId(), e.getMessage());
             data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
             data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
             data.setDataTimeStamp(new Date());
@@ -284,10 +280,7 @@ public class KepServerDataPlugin implements DataPlugin {
         return data;
     }
 
-    private String parseOpcValueToString(DataValue value) {
         // todo DINT for filterpress
-        NodeId node = value.getValue().getDataType().get();
-        return value.getValue().getValue().toString();
     String parseOpcValueToString(Object value, MetricModel metricModel, ThingMetricLabel tml) {
         String destStr = null;
         if (MetricModel.VALUE_TYPE_BOOL.equals(metricModel.getValueType())
@@ -347,8 +340,10 @@ public class KepServerDataPlugin implements DataPlugin {
 
     public DataModel syncRead(String thingCode, String metricCode) {
         // synchronous read request via VariableNode
-        String labelPath = this.dataEngineService.getLabelByTM(thingCode
+        ThingMetricLabel tml = this.dataEngineService.getTMLByTM(thingCode
                 , metricCode);
+        String labelPath = tml.getLabelPath();
+
         NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
         VariableNode node = opcClient.getAddressSpace().createVariableNode(nodeId);
 
