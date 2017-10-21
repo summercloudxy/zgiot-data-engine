@@ -4,9 +4,9 @@ import com.zgiot.common.enums.MetricDataTypeEnum;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
+import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.config.OpcUaProperties;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
-import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -14,10 +14,12 @@ import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.sdk.client.api.UaSession;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.sdk.client.api.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.stack.client.UaTcpStackClient;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -35,7 +37,9 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.validation.constraints.NotNull;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -224,7 +228,8 @@ public class KepServerDataPlugin implements DataPlugin {
                 "subscription value received: item={}, value={}",
                 item.getReadValueId().getNodeId(), value.getValue());
         // parse
-        DataModel data = parseToDataModel(item, value);
+        NodeId nodeId = item.getReadValueId().getNodeId();
+        DataModel data = parseToDataModel(nodeId, value);
 
         // send to Q
         Queue q = QueueManager.getQueueCollected();
@@ -232,11 +237,11 @@ public class KepServerDataPlugin implements DataPlugin {
 
     }
 
-    private DataModel parseToDataModel(UaMonitoredItem item, DataValue value) {
+    private DataModel parseToDataModel(NodeId nodeId, DataValue value) {
         DataModel data = new DataModel();
         // e.g.  "XG.XG.1303/PR/CURRENT/0"
         try {
-            String dataLabel = item.getReadValueId().getNodeId().getIdentifier().toString();
+            String dataLabel = nodeId.getIdentifier().toString();
             ThingMetricLabel tml = this.dataEngineService.getTMLByLabel(dataLabel);
             if (tml == null) {
                 throw new RuntimeException("Cannot match label to std model, pls check db config. (label=`" + dataLabel + "`)");
@@ -256,6 +261,8 @@ public class KepServerDataPlugin implements DataPlugin {
 
             } else {
                 logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
+                        , nodeId, value.getStatusCode().toString());
+                data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
                         , item.getReadValueId().getNodeId(), value.getStatusCode().toString());
                 data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
@@ -266,6 +273,8 @@ public class KepServerDataPlugin implements DataPlugin {
 
         } catch (Exception e) {
             logger.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "
+                    , nodeId, e.getMessage());
+            data.setThingCategoryCode(ThingModel.CATEGORY_ERROR);
                     , item.getReadValueId().getNodeId(), e.getMessage());
             data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
             data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
@@ -275,6 +284,10 @@ public class KepServerDataPlugin implements DataPlugin {
         return data;
     }
 
+    private String parseOpcValueToString(DataValue value) {
+        // todo DINT for filterpress
+        NodeId node = value.getValue().getDataType().get();
+        return value.getValue().getValue().toString();
     String parseOpcValueToString(Object value, MetricModel metricModel, ThingMetricLabel tml) {
         String destStr = null;
         if (MetricModel.VALUE_TYPE_BOOL.equals(metricModel.getValueType())
@@ -330,6 +343,27 @@ public class KepServerDataPlugin implements DataPlugin {
         }
 
         return goodCount;
+    }
+
+    public DataModel syncRead(String thingCode, String metricCode) {
+        // synchronous read request via VariableNode
+        String labelPath = this.dataEngineService.getLabelByTM(thingCode
+                , metricCode);
+        NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
+        VariableNode node = opcClient.getAddressSpace().createVariableNode(nodeId);
+
+        DataValue value = null;
+        try {
+            value = node.readValue().get();
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+
+        logger.info("StartTime={}", value.getValue().getValue());
+        DataModel dm = parseToDataModel(nodeId, value);
+
+        return dm;
+
     }
 
 }
