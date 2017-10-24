@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<configuration>
+<configuration scan="false" scanPeriod="30 seconds" debug="false">
     <property name="LOG_FILE" value="${LOG_PATH}/${LOG_FILE_NAME}"/>
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
