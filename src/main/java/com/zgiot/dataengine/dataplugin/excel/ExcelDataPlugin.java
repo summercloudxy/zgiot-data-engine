@@ -4,7 +4,6 @@ import com.zgiot.common.constants.MetricCodes;
 import com.zgiot.common.enums.MetricDataTypeEnum;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
-import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.dao.ExcelMapper;

@@ -1,9 +1,9 @@
 package com.zgiot.dataengine.config;
 
+import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
-import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.slf4j.Logger;
@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Configuration
