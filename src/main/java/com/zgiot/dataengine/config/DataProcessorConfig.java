@@ -2,12 +2,10 @@ package com.zgiot.dataengine.config;
 
 import com.zgiot.dataengine.dataprocessor.DataListener;
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
-import com.zgiot.dataengine.dataprocessor.mongo.DataPersistMongoDbDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,15 +31,11 @@ public class DataProcessorConfig {
         return obj;
     }
 
-    @Autowired
-    DataPersistMongoDbDataListener dataPersistMongoDbDataListener;
-
     @Bean
     public DataProcessorManager newDataProcessorManager() {
         Map<String, DataListener> map = new HashMap<>();
         map.put("NONE", null);
         map.put("WSS", newUpforwarderDataListener());
-        map.put("MONGO", dataPersistMongoDbDataListener);
 
         DataProcessorManager obj = new DataProcessorManager();
         String[] configArr = this.configDataListeners.split(",");
@@ -52,7 +46,7 @@ public class DataProcessorConfig {
             }
 
             obj.getDataListeners().add(dl);
-            logger.info("DataListener added: {}" , dl.getClass());
+            logger.info("DataListener added: {}", dl.getClass());
         }
 
         return obj;
