@@ -3,6 +3,8 @@ package com.zgiot.dataengine.dataplugin.kepserver;
 import com.zgiot.common.enums.MetricDataTypeEnum;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
+import com.zgiot.common.reloader.Reloader;
+import com.zgiot.common.reloader.ServerReloadManager;
 import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.config.OpcUaProperties;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
@@ -33,10 +35,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -46,7 +50,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 @Configuration
 @EnableConfigurationProperties(OpcUaProperties.class)
-public class KepServerDataPlugin implements DataPlugin {
+public class KepServerDataPlugin implements DataPlugin, Reloader {
 
     private static final Logger logger = LoggerFactory.getLogger(KepServerDataPlugin.class);
 
@@ -57,6 +61,8 @@ public class KepServerDataPlugin implements DataPlugin {
 
     private static OpcUaClient opcClient;
     private static AtomicBoolean opcClientConnected = new AtomicBoolean(false);
+    private static AtomicBoolean isReloading = new AtomicBoolean(false);
+
     private double subscriptionInterval = 1000.0; // 1s
     private static final int RETRY_KEP_INTERVAL = 5000; // ms
     private static final int OPC_NAMESPACE_INDEX = 2;
@@ -64,12 +70,15 @@ public class KepServerDataPlugin implements DataPlugin {
     @Autowired
     private DataEngineService dataEngineService;
 
+    private SessionActivityListener sessionActivityListener;
+
     public void init() throws Exception {
         // create milo client
         try {
             opcClient = createClient();
             clientHandles.set(1l);
-            opcClient.addSessionActivityListener(new SessionActivityListener() {
+
+            this.sessionActivityListener = new SessionActivityListener() {
                 @Override
                 public void onSessionActive(UaSession session) {
                     logger.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
@@ -79,6 +88,12 @@ public class KepServerDataPlugin implements DataPlugin {
 
                 @Override
                 public void onSessionInactive(UaSession session) {
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        logger.error(e.getMessage());
+                    }
+
                     logger.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
                     opcClientConnected.set(false);
 
@@ -95,7 +110,9 @@ public class KepServerDataPlugin implements DataPlugin {
 
                     logger.info("KepServer connection resumed. ");
                 }
-            });
+            };
+
+            opcClient.addSessionActivityListener(this.sessionActivityListener);
         } catch (Exception e) {
             throw e;
         }
@@ -277,7 +294,7 @@ public class KepServerDataPlugin implements DataPlugin {
         return data;
     }
 
-        // todo DINT for filterpress
+    // todo DINT for filterpress
     String parseOpcValueToString(Object value, MetricModel metricModel, ThingMetricLabel tml) {
         String destStr = null;
         if (MetricModel.VALUE_TYPE_BOOL.equals(metricModel.getValueType())
@@ -355,7 +372,24 @@ public class KepServerDataPlugin implements DataPlugin {
         DataModel dm = parseToDataModel(nodeId, value);
 
         return dm;
+    }
 
+    @Override
+    public void reload() {
+        isReloading.set(true);
+
+        try {
+            opcClient.removeSessionActivityListener(this.sessionActivityListener);
+            opcClient.disconnect().get();
+
+            init();
+            start();
+
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+
+        isReloading.set(false);
     }
 
 }

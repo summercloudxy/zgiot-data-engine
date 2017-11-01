@@ -130,7 +130,6 @@ public class CmdSendController {
         return new ResponseEntity<>(
                 ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
-
     }
 
     private void logAccepted(HttpServletRequest req, String reqId, String bodyStr) {
@@ -158,7 +157,7 @@ public class CmdSendController {
     private void logEnd(String reqId, String msg, long startMs) {
         if (logger.isDebugEnabled()) {
             long duration = System.currentTimeMillis() - startMs;
-            logger.debug("End of cmd send. (reqId=`{}`, msg=`{}`, drMs=`{}`)",
+            logger.debug("CmdSendEnded: reqId=`{}`, msg=`{}`, drMs=`{}`",
                     reqId,
                     msg,
                     duration);

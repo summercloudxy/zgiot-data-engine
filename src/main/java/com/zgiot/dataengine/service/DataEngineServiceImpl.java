@@ -2,6 +2,8 @@ package com.zgiot.dataengine.service;
 
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
+import com.zgiot.common.reloader.Reloader;
+import com.zgiot.common.reloader.ServerReloadManager;
 import com.zgiot.dataengine.repository.TMLMapper;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import org.slf4j.Logger;
@@ -9,12 +11,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class DataEngineServiceImpl implements DataEngineService {
+public class DataEngineServiceImpl implements DataEngineService, Reloader {
 
     private static final Logger logger = LoggerFactory.getLogger(DataEngineServiceImpl.class);
 
@@ -30,33 +33,38 @@ public class DataEngineServiceImpl implements DataEngineService {
 
     @Override
     public void initCache() {
-        List<ThingMetricLabel> list = tmlMapper.findAllDeviceMetricLabels();
-        thingMetricLabelCache.clear();
-        label_ThingMetricCache.clear();
-        thingMetric_LabelCache.clear();
-        for (ThingMetricLabel item : list) {
-            thingMetricLabelCache.add(item);
-            label_ThingMetricCache.put(item.getLabelPath(), item);
-            thingMetric_LabelCache.put(item.getThingCode() + "_" + item.getMetricCode(), item);
-        }
+        synchronized (this) {
+            List<ThingMetricLabel> list = tmlMapper.findAllDeviceMetricLabels();
+            thingMetricLabelCache.clear();
+            label_ThingMetricCache.clear();
+            thingMetric_LabelCache.clear();
+            for (ThingMetricLabel item : list) {
+                thingMetricLabelCache.add(item);
+                label_ThingMetricCache.put(item.getLabelPath(), item);
+                thingMetric_LabelCache.put(item.getThingCode() + "_" + item.getMetricCode(), item);
+            }
 
-        List<ThingModel> things = this.tmlMapper.findAllThings();
-        thingCache.clear();
-        for (ThingModel t : things) {
-            thingCache.put(t.getThingCode(), t);
-        }
+            List<ThingModel> things = this.tmlMapper.findAllThings();
+            thingCache.clear();
+            for (ThingModel t : things) {
+                thingCache.put(t.getThingCode(), t);
+            }
 
-        List<MetricModel> metrics = this.tmlMapper.findAllMetrics();
-        metricCache.clear();
-        for (MetricModel m : metrics) {
-            metricCache.put(m.getMetricCode(), m);
-        }
+            List<MetricModel> metrics = this.tmlMapper.findAllMetrics();
+            metricCache.clear();
+            for (MetricModel m : metrics) {
+                metricCache.put(m.getMetricCode(), m);
+            }
 
-        logger.info("Cache inited. ");
+            logger.info("Cache inited. ");
+        }
     }
 
     @Override
     public ThingMetricLabel getTMLByLabel(String labelPath) {
+        synchronized (this) {
+        }
+
         ThingMetricLabel o = label_ThingMetricCache.get(labelPath);
         if (o == null) {
             logger.warn("Not found metricCode for label '{}'", labelPath);
@@ -66,11 +74,15 @@ public class DataEngineServiceImpl implements DataEngineService {
 
     @Override
     public List<ThingMetricLabel> findAllTML() {
+        synchronized (this) {
+        }
         return thingMetricLabelCache;
     }
 
     @Override
     public ThingMetricLabel getTMLByTM(String thingCode, String metricCode) {
+        synchronized (this) {
+        }
         ThingMetricLabel o = thingMetric_LabelCache.get(thingCode + "_" + metricCode);
         if (o == null) {
             logger.warn("Not found label for thingCode {} and metricCode '{}'", thingCode, metricCode);
@@ -80,6 +92,9 @@ public class DataEngineServiceImpl implements DataEngineService {
 
     @Override
     public ThingModel getThing(String code) {
+        synchronized (this) {
+        }
+
         ThingModel o = null;
 
         if (thingCache.containsKey(code)) {
@@ -93,6 +108,9 @@ public class DataEngineServiceImpl implements DataEngineService {
 
     @Override
     public MetricModel getMetric(String code) {
+        synchronized (this) {
+        }
+
         MetricModel o = null;
 
         if (metricCache.containsKey(code)) {
@@ -104,4 +122,8 @@ public class DataEngineServiceImpl implements DataEngineService {
         return o;
     }
 
+    @Override
+    public void reload() {
+        initCache();
+    }
 }

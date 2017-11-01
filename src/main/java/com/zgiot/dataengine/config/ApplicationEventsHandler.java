@@ -1,5 +1,6 @@
 package com.zgiot.dataengine.config;
 
+import com.zgiot.common.reloader.ServerReloadManager;
 import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
@@ -36,6 +37,7 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
 
+            registerReloaders();
             dataEngineService.initCache();
 
             // init plugin clazz map
@@ -75,5 +77,9 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
         logger.info("Data processor started. ");
     }
 
-}
+    private void registerReloaders() {
+        ServerReloadManager.addReloader(this.dataEngineService);
+        ServerReloadManager.addReloader(this.kepServerDataPlugin);
+    }
 
+}
