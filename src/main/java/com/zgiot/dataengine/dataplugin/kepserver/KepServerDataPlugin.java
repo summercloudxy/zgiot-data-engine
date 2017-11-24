@@ -61,6 +61,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     private static AtomicBoolean isReloading = new AtomicBoolean(false);
 
     private double subscriptionInterval = 1000.0; // 1s
+    private double CLIENT_SCAN_RATE = 500.0; // ms
     private static final int RETRY_KEP_INTERVAL = 5000; // ms
     private static final int OPC_NAMESPACE_INDEX = 2;
 
@@ -211,7 +212,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         UInteger clientHandle = uint(clientHandles.getAndIncrement());
 
         MonitoringParameters parameters = new MonitoringParameters(clientHandle
-                , 500.0, // 采样间隔
+                , CLIENT_SCAN_RATE, // 采样间隔
                 null, // filter, null means use default
                 uint(10), // 队列长度
                 true // 是否抛弃旧数据
