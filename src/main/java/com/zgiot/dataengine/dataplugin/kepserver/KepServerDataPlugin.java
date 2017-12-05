@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -61,7 +62,8 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     private static AtomicBoolean isReloading = new AtomicBoolean(false);
 
     private double subscriptionInterval = 1000.0; // 1s
-    private double CLIENT_SCAN_RATE = 500.0; // ms
+    @Value("${ocpua.client-scan-rate:500}")
+    private double CLIENT_SCAN_RATE; // ms
     private static final int RETRY_KEP_INTERVAL = 5000; // ms
     private static final int OPC_NAMESPACE_INDEX = 2;
 
@@ -73,6 +75,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     public void init() throws Exception {
         // create milo client
         try {
+            logger.info("Opc UA client scan rate is {} ms. ", this.CLIENT_SCAN_RATE);
             opcClient = createClient();
             clientHandles.set(1l);
 
