@@ -50,7 +50,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 @EnableConfigurationProperties(OpcUaProperties.class)
 public class KepServerDataPlugin implements DataPlugin, Reloader {
 
-    private static final Logger logger = LoggerFactory.getLogger(KepServerDataPlugin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KepServerDataPlugin.class);
 
     private AtomicLong clientHandles = new AtomicLong(1L);
 
@@ -75,7 +75,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     public void init() throws Exception {
         // create milo client
         try {
-            logger.info("Opc UA client scan rate is {} ms. ", this.CLIENT_SCAN_RATE);
+            LOGGER.info("Opc UA client scan rate is {} ms. ", this.CLIENT_SCAN_RATE);
             opcClient = createClient();
             clientHandles.set(1l);
 
@@ -83,7 +83,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                 @Override
                 public  void onSessionActive(UaSession session) {
                     synchronized (KepServerDataPlugin.class) {
-                        logger.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
+                        LOGGER.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
                         // synchronous connect
                         opcClientConnected.set(true);
 
@@ -99,10 +99,10 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                         try {
                             Thread.sleep(RETRY_KEP_INTERVAL);
                         } catch (InterruptedException e) {
-                            logger.error(e.getMessage());
+                            LOGGER.error(e.getMessage());
                         }
 
-                        logger.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
+                        LOGGER.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
                         opcClientConnected.set(false);
 
                         // new reconn thread
@@ -110,26 +110,26 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                         Thread reconnDaemon = new Thread(() -> {
                             opcClient.removeSessionActivityListener(sessionActivityListener);
                             opcClient.disconnect();
-                            logger.info("Opc client closed.");
+                            LOGGER.info("Opc client closed.");
 
                             while (!opcClientConnected.get()) {
                                 try {
-                                    logger.warn("Will retry to start KepServer plugin in {}ms.", RETRY_KEP_INTERVAL);
+                                    LOGGER.warn("Will retry to start KepServer plugin in {}ms.", RETRY_KEP_INTERVAL);
                                     Thread.sleep(RETRY_KEP_INTERVAL);
                                     init();
                                     start();
                                 } catch (Exception e) {
-                                    logger.error("OPC session failed.", e);
+                                    LOGGER.error("OPC session failed.", e);
                                 }
                             }
 
-                            logger.info("KepServer connection resumed. ");
+                            LOGGER.info("KepServer connection resumed. ");
                         }, threadName);
 
                         reconnDaemon.setDaemon(true);
                         RECONN_THREADS.put(threadName,reconnDaemon);
                         reconnDaemon.start();
-                        logger.info("Reconnecting KepServer thread `{}` started. ", threadName);
+                        LOGGER.info("Reconnecting KepServer thread `{}` started. ", threadName);
 
                     }
                 }
@@ -152,7 +152,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                 .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()))
                 .findFirst().orElseThrow(() -> new Exception("no desired endpoints returned"));
 
-        logger.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
+        LOGGER.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
 
         loader.load();
 
@@ -201,11 +201,11 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
             for (UaMonitoredItem item : items) {
                 if (item.getStatusCode().isGood()) {
-                    logger.info("item created for nodeId={}", item.getReadValueId().getNodeId());
+                    LOGGER.info("item created for nodeId={}", item.getReadValueId().getNodeId());
                 } else {
                     failedSubsLabelMap.put(item.getReadValueId().getNodeId().toString()
                             , item.getStatusCode().toString());
-                    logger.warn(
+                    LOGGER.warn(
                             "failed to create item for nodeId={} (status={})",
                             item.getReadValueId().getNodeId(), item.getStatusCode());
                 }
@@ -215,9 +215,9 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         // check any failed
         if (failedSubsLabelMap.size() > 0) {
             //throw new RuntimeException("Failed subscription found, pls check your db/kepserver config and restart again! ");
-            logger.warn("Subscription failed found. Count is : {}", failedSubsLabelMap.size());
+            LOGGER.warn("Subscription failed found. Count is : {}", failedSubsLabelMap.size());
         } else {
-            logger.info("Success to subscribe all labels. ");
+            LOGGER.info("Success to subscribe all labels. ");
         }
 
         opcClientConnected.set(true);
@@ -261,7 +261,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     }
 
     private void onSubscriptionValue(UaMonitoredItem item, DataValue value) {
-        logger.trace(
+        LOGGER.trace(
                 "subscription value received: item={}, value={}",
                 item.getReadValueId().getNodeId(), value.getValue());
         // parse
@@ -297,7 +297,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                 data.setValue(parseOpcValueToString(value.getValue().getValue(), metricModel, tml));
 
             } else {
-                logger.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
+                LOGGER.warn("Not good data responsed, nodeId is '{}', status is: '{}' "
                         , nodeId, value.getStatusCode().toString());
                 data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
                 data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
@@ -307,7 +307,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
             }
 
         } catch (Exception e) {
-            logger.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "
+            LOGGER.warn("Unexpected data responsed, nodeId is '{}', error msg is: '{}' "
                     , nodeId, e.getMessage());
             data.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_ERROR.getName());
             data.setMetricCategoryCode(MetricModel.CATEGORY_SIGNAL);
@@ -333,7 +333,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     public int sendCommands(List<DataModel> datalist, @NotNull List<String> errors) throws Exception {
 
         if (datalist == null || datalist.size() == 0) {
-            logger.warn("Send command list is empty. ({})", datalist);
+            LOGGER.warn("Send command list is empty. ({})", datalist);
             return 0;
         }
 
@@ -353,7 +353,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                     , null, null);
             values.add(v);
 
-            logger.debug("Pre-send cmd label='{}'  value='{}' ", labelPath, data.getValue());
+            LOGGER.debug("Pre-send cmd label='{}'  value='{}' ", labelPath, data.getValue());
 
         }
 
@@ -387,10 +387,10 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         try {
             value = node.readValue().get();
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
 
-        logger.info("StartTime={}", (value == null) ? null : value.getValue().getValue());
+        LOGGER.info("StartTime={}", (value == null) ? null : value.getValue().getValue());
         DataModel dm = parseToDataModel(nodeId, value);
 
         return dm;
@@ -406,7 +406,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
             start();
 
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
     }
 

@@ -5,10 +5,10 @@ import java.util.concurrent.Executors;
 
 public class ThreadManager {
 
-    private static final ExecutorService es = Executors.newCachedThreadPool();
+    private static final ExecutorService ES = Executors.newCachedThreadPool();
 
     public static ExecutorService getThreadPool() {
-        return es;
+        return ES;
     }
 
 }

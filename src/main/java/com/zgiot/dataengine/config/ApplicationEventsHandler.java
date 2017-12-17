@@ -20,7 +20,7 @@ import java.util.Map;
 
 @Configuration
 public class ApplicationEventsHandler implements ApplicationListener<ContextRefreshedEvent> {
-    private static final Logger logger = LoggerFactory.getLogger(ApplicationEventsHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationEventsHandler.class);
 
     @Value("${dataengine.plugins}")
     String pluginsStr;
@@ -55,7 +55,7 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
 
                 dataPlugin.init();
                 dataPlugin.start();
-                logger.info("Data plugin `{}` started. ", dataPlugin.getClass());
+                LOGGER.info("Data plugin `{}` started. ", dataPlugin.getClass());
             }
 
             // init thread pool
@@ -64,17 +64,17 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
                 @Override
                 public void run() {
                     ThreadManager.getThreadPool().shutdown();
-                    System.out.println("Thread pool shutdown. ");
+                    System.out.println("Thread pool shutdown. "); //NOPMD
                 }
             }));
 
         } catch (Throwable e) {
-            logger.error("Failed to startup KepServer plugin! ", e);
+            LOGGER.error("Failed to startup KepServer plugin! ", e);
             System.exit(2);
         }
 
         dataProcessorManager.start();
-        logger.info("Data processor started. ");
+        LOGGER.info("Data processor started. ");
     }
 
     private void registerReloaders() {

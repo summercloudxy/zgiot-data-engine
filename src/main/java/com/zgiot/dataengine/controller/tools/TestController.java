@@ -21,10 +21,10 @@ public class TestController {
             method = RequestMethod.GET)
     public ResponseEntity<String> testit() {
 
-        int size = 3000;
+        final int SIZE = 3000;
         long startTime = System.currentTimeMillis();
         DataModel d = new DataModel("DEV", "1111", "SIG", "CR0", null, null);
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < SIZE; i++) {
             DataModel dd = d.clone();
             dd.setValue(String.valueOf(i));
             dd.setDataTimeStamp(new Date(startTime + i));

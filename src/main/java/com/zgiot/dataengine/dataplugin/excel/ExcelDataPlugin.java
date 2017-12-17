@@ -32,7 +32,7 @@ public class ExcelDataPlugin implements DataPlugin {
     @Autowired
     private ExcelMapper excelMapper;
     private List<ExcelRange> excelRangeList;
-    private static final Logger logger = LoggerFactory.getLogger(ExcelDataPlugin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExcelDataPlugin.class);
     private static final int READ_MODE_ONE=1;
     private static final int READ_MODE_TWO=2;
     private static final int READ_MODE_THREE=3;
@@ -57,56 +57,61 @@ public class ExcelDataPlugin implements DataPlugin {
 
     @Scheduled(cron = "0 0/3 * * * ?")
     public void doUpdate() throws Exception {
-        logger.debug("煤质化验指标更新启动 ...");
+        LOGGER.debug("煤质化验指标更新启动 ...");
         // 读取班报常规流程
         if (baseUri != null) {
             File file = new File(baseUri);
-            logger.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
+            LOGGER.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
             if (file.exists()) {
                 if (file.isDirectory()) {
-                    logger.debug("成功访问煤质化验指标存放目录[\"" + baseUri + "\"]");
-                    logger.debug("开始更新任务...");
+                    LOGGER.debug("成功访问煤质化验指标存放目录[\"" + baseUri + "\"]");
+                    LOGGER.debug("开始更新任务...");
                     File[] testIndexFileLst = file.listFiles((dir, name) -> {
                         // 文件定位
                         return name.indexOf("煤质化验班报.xls") > 0;
                     });
                     int[] total = {0, 0};
-                    for (File testIndexFile : testIndexFileLst) {
-                        logger.debug("搜索到指标文件：[" + testIndexFile.getName() + "]");
-                        logger.debug("初始化指标文件：[" + testIndexFile.getName() + "]");
-                        HSSFWorkbook workbook =
-                                new HSSFWorkbook(new BufferedInputStream(new FileInputStream(testIndexFile)));
-                        HSSFSheet sheet;
-                        logger.debug("开始检索新的数据表格...");
-                        // 开始解析
-                        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                            sheet = workbook.getSheetAt(i);
-                            if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
-                                continue;
+                    if (testIndexFileLst == null){
+                        LOGGER.error("testIndexFileLst cannot be null");
+                    }else{
+                        for (File testIndexFile : testIndexFileLst) {
+                            LOGGER.debug("搜索到指标文件：[" + testIndexFile.getName() + "]");
+                            LOGGER.debug("初始化指标文件：[" + testIndexFile.getName() + "]");
+                            HSSFWorkbook workbook =
+                                    new HSSFWorkbook(new BufferedInputStream(new FileInputStream(testIndexFile)));
+                            HSSFSheet sheet;
+                            LOGGER.debug("开始检索新的数据表格...");
+                            // 开始解析
+                            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                                sheet = workbook.getSheetAt(i);
+                                if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
+                                    continue;
+                                }
+                                List<CoalTestRecord> tlst = new ArrayList<>();
+                                for(ExcelRange excelRange:excelRangeList){
+                                    tlst.addAll(getTextInfoInArea(excelRange,sheet));
+                                }
+                                if (!tlst.isEmpty()) {
+                                    LOGGER.info("找到新表格[" + sheet.getSheetName() + "],有[" + tlst.size() + "]条数据需要转换！");
+                                    List<DataModel> dataModels = parseToDataModel(tlst);
+                                    Queue q = QueueManager.getQueueCollected();
+                                    q.addAll(dataModels);
+                                    LOGGER.info("表格[" + sheet.getSheetName() + "]数据更新完毕,[" + dataModels.size() + "]条数据添加到队列！");
+                                    total[0] += 1;
+                                    total[1] += dataModels.size();
+                                }
                             }
-                            List<CoalTestRecord> tlst = new ArrayList<>();
-                            for(ExcelRange excelRange:excelRangeList){
-                                tlst.addAll(getTextInfoInArea(excelRange,sheet));
-                            }
-                            if (!tlst.isEmpty()) {
-                                logger.info("找到新表格[" + sheet.getSheetName() + "],有[" + tlst.size() + "]条数据需要转换！");
-                                List<DataModel> dataModels = parseToDataModel(tlst);
-                                Queue q = QueueManager.getQueueCollected();
-                                q.addAll(dataModels);
-                                logger.info("表格[" + sheet.getSheetName() + "]数据更新完毕,[" + dataModels.size() + "]条数据添加到队列！");
-                                total[0] += 1;
-                                total[1] += dataModels.size();
-                            }
+                            workbook.close();
                         }
-                        workbook.close();
+                        LOGGER.info("本次任务统计：更新[" + total[0] + "]个表格，[" + total[1] + "]条记录！");
                     }
-                    logger.info("本次任务统计：更新[" + total[0] + "]个表格，[" + total[1] + "]条记录！");
+
                 }
             } else {
-                logger.debug("无法连接到指定目录，未做任何操作直接退出！");
+                LOGGER.debug("无法连接到指定目录，未做任何操作直接退出！");
             }
         } else {
-            logger.debug("未配置数据存放路径，未做任何操作直接退出！");
+            LOGGER.debug("未配置数据存放路径，未做任何操作直接退出！");
         }
     }
 

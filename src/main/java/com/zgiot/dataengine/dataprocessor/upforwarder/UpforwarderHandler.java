@@ -17,7 +17,8 @@ import java.io.IOException;
 @Component
 public class UpforwarderHandler extends TextWebSocketHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(UpforwarderHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpforwarderHandler.class);
+    static final int BIT_WAIT = 100;
 
     @Autowired
     UpforwarderDataListener upforwarderDataListener;
@@ -29,17 +30,17 @@ public class UpforwarderHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message)
             throws Exception {
-        logger.info("来自客户端的消息:" + message);
+        LOGGER.info("来自客户端的消息:" + message);
         while (true) {
             session.sendMessage(new TextMessage("i got: "
                     + message.getPayload() + System.currentTimeMillis()));
-            Thread.sleep(100);
+            Thread.sleep(BIT_WAIT);
         }
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        logger.info("Connected : " + session);
+        LOGGER.info("Connected : " + session);
         upforwarderDataListener.addSession(session);
     }
 
@@ -49,9 +50,9 @@ public class UpforwarderHandler extends TextWebSocketHandler {
             upforwarderDataListener.removeSession(session);
             session.close();
         } catch (IOException e) {
-            logger.error("Cannot close session on afterConnectionClosed ");
+            LOGGER.error("Cannot close session on afterConnectionClosed ");
         }
-        logger.info("afterConnectionClosed of session '{}'" , session);
+        LOGGER.info("afterConnectionClosed of session '{}'" , session);
     }
 
     @Override
@@ -59,7 +60,7 @@ public class UpforwarderHandler extends TextWebSocketHandler {
             throws Exception {
         upforwarderDataListener.removeSession(session);
         session.close(CloseStatus.SERVER_ERROR);
-        logger.error("Close session '{}' on handleTransportError ", session);
+        LOGGER.error("Close session '{}' on handleTransportError ", session);
     }
 
 }

@@ -27,7 +27,8 @@ import java.util.*;
 @RestController
 @RequestMapping(value = "/cmd")
 public class CmdSendController {
-    private static final Logger logger = LoggerFactory.getLogger(CmdSendController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmdSendController.class);
+    private static final int DEFAULT_BUFFER_SIZE = 1000;
 
     @Autowired
     private KepServerDataPlugin kepServerDataCollecter;
@@ -103,7 +104,7 @@ public class CmdSendController {
                     , SysException.EC_UNKNOWN, 0);
         } else {
             // send via KepServer
-            List<String> errors = new ArrayList<>(10);
+            List<String> errors = new ArrayList<>();
             try {
                 // core
                 okCount = this.kepServerDataCollecter.sendCommands(list, errors);
@@ -132,7 +133,7 @@ public class CmdSendController {
     }
 
     private void logAccepted(HttpServletRequest req, String reqId, String bodyStr) {
-        if (logger.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()){
             // headers, body
             Map map = new LinkedHashMap();
             map.put("reqId", req.getHeader(GlobalConstants.REQUEST_ID_HEADER_KEY));
@@ -145,7 +146,7 @@ public class CmdSendController {
                 headerMap.put(name, hValue);
             }
 
-            logger.debug("CmdSendAccepted: reqId=`{}`, headers=`{}`, body=`{}` ",
+            LOGGER.debug("CmdSendAccepted: reqId=`{}`, headers=`{}`, body=`{}` ",
                     reqId
                     , JSON.toJSONString(headerMap)
                     , bodyStr
@@ -154,9 +155,9 @@ public class CmdSendController {
     }
 
     private void logEnd(String reqId, String msg, long startMs) {
-        if (logger.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             long duration = System.currentTimeMillis() - startMs;
-            logger.debug("CmdSendEnded: reqId=`{}`, msg=`{}`, drMs=`{}`",
+            LOGGER.debug("CmdSendEnded: reqId=`{}`, msg=`{}`, drMs=`{}`",
                     reqId,
                     msg,
                     duration);
@@ -183,7 +184,7 @@ public class CmdSendController {
             return "";
         }
 
-        StringBuffer sb = new StringBuffer(1000);
+        StringBuffer sb = new StringBuffer(DEFAULT_BUFFER_SIZE);
         boolean first = true;
         for (String str : errors) {
             if (!first) {
