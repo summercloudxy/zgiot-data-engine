@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 
 @RestController
@@ -16,7 +17,7 @@ public class SysStatsController {
     @RequestMapping(
             value = "/all",
             method = RequestMethod.GET)
-    public ResponseEntity<String> sysStats() {
+    public ResponseEntity<String> sysStats(HttpServletRequest req) {
         LinkedHashMap map = new LinkedHashMap();
         map.put("q.fromplugin.size", QueueManager.getQueueCollected().size());
         map.put("q.wss-buffer.size", QueueManager.getPreWss().size());

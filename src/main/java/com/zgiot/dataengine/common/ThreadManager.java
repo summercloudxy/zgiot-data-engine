@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 
 public class ThreadManager {
 
-    private static final ExecutorService es = Executors.newCachedThreadPool();  // TODO q need monitor
+    private static final ExecutorService es = Executors.newCachedThreadPool();
 
     public static ExecutorService getThreadPool() {
         return es;

@@ -8,7 +8,6 @@ import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.common.restcontroller.ServerResponse;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
-import com.zgiot.dataengine.dataprocessor.upforwarder.HandshakeInterceptor;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.slf4j.Logger;
@@ -110,7 +109,7 @@ public class CmdSendController {
                 okCount = this.kepServerDataCollecter.sendCommands(list, errors);
             } catch (Exception e) {
                 logEnd(reqId, e.getMessage(), startMs);
-                throw new SysException(e.getMessage(), SysException.EC_UNKNOWN, 0);
+                throw new SysException(e.getMessage(), SysException.EC_UNKNOWN, 0); // NOPMD
             }
 
             if (okCount < list.size()) {

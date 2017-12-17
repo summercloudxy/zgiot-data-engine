@@ -3,7 +3,6 @@ package com.zgiot.dataengine.service;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.common.reloader.Reloader;
-import com.zgiot.common.reloader.ServerReloadManager;
 import com.zgiot.dataengine.repository.TMLMapper;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import org.slf4j.Logger;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;

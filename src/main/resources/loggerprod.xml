@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <logger name="root" level="INFO"/>
+</configuration-->
+
+<configuration scan="true" scanPeriod="30 seconds" debug="false">
+    <property name="LOG_PATH" value="d:/log/dataengine"/>
+    <property name="LOG_FILE" value="${LOG_PATH}/dataengine.log"/>
+    <property name="PATTERN1" value="[%date %logger{30}:%L-%level] %msg%n"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>${PATTERN1}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${LOG_PATH}/bak/dataengine-%d{yyyy-MM-dd}.%00i.zip</fileNamePattern>
+            <!-- each file should be at most 100MB, keep 60 days worth of history, but at most 20GB -->
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>200GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN1}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="TMP_ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>data-engine-tmp.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${LOG_PATH}/bak/data-engine-tmp.%d{yyyy-MM-dd}.%00i.zip</fileNamePattern>
+            <!-- each file should be at most 100MB, keep 60 days worth of history, but at most 200GB -->
+            <maxFileSize>300MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>200GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN1}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="ROLLING" />
+    </root>
+
+    <logger name="com.zgiot.dataengine.dataprocessor.DataProcessorManager" level="trace" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ROLLING"/>
+    </logger>
+
+</configuration>
+

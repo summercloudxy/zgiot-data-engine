@@ -59,7 +59,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
     private static OpcUaClient opcClient;
     private static AtomicBoolean opcClientConnected = new AtomicBoolean(false);
-    private static AtomicBoolean isReloading = new AtomicBoolean(false);
+    private static Map RECONN_THREADS = new ConcurrentHashMap();
 
     private double subscriptionInterval = 1000.0; // 1s
     @Value("${ocpua.client-scan-rate:500}")
@@ -81,35 +81,57 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
             this.sessionActivityListener = new SessionActivityListener() {
                 @Override
-                public void onSessionActive(UaSession session) {
-                    logger.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
-                    // synchronous connect
-                    opcClientConnected.set(true);
+                public  void onSessionActive(UaSession session) {
+                    synchronized (KepServerDataPlugin.class) {
+                        logger.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
+                        // synchronous connect
+                        opcClientConnected.set(true);
+
+                        if (RECONN_THREADS.size()>0){
+                            RECONN_THREADS.clear();
+                        }
+                    }
                 }
 
                 @Override
                 public void onSessionInactive(UaSession session) {
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        logger.error(e.getMessage());
-                    }
-
-                    logger.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
-                    opcClientConnected.set(false);
-
-                    while (!opcClientConnected.get()) {
+                    synchronized (KepServerDataPlugin.class) {
                         try {
-                            logger.warn("Will retry to start KepServer plugin in {}ms.", RETRY_KEP_INTERVAL);
                             Thread.sleep(RETRY_KEP_INTERVAL);
-                            init();
-                            start();
-                        } catch (Exception e) {
-                            logger.error("OPC session failed.", e);
+                        } catch (InterruptedException e) {
+                            logger.error(e.getMessage());
                         }
-                    }
 
-                    logger.info("KepServer connection resumed. ");
+                        logger.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
+                        opcClientConnected.set(false);
+
+                        // new reconn thread
+                        String threadName = "KepServer-reconn-thread";
+                        Thread reconnDaemon = new Thread(() -> {
+                            opcClient.removeSessionActivityListener(sessionActivityListener);
+                            opcClient.disconnect();
+                            logger.info("Opc client closed.");
+
+                            while (!opcClientConnected.get()) {
+                                try {
+                                    logger.warn("Will retry to start KepServer plugin in {}ms.", RETRY_KEP_INTERVAL);
+                                    Thread.sleep(RETRY_KEP_INTERVAL);
+                                    init();
+                                    start();
+                                } catch (Exception e) {
+                                    logger.error("OPC session failed.", e);
+                                }
+                            }
+
+                            logger.info("KepServer connection resumed. ");
+                        }, threadName);
+
+                        reconnDaemon.setDaemon(true);
+                        RECONN_THREADS.put(threadName,reconnDaemon);
+                        reconnDaemon.start();
+                        logger.info("Reconnecting KepServer thread `{}` started. ", threadName);
+
+                    }
                 }
             };
 
@@ -295,7 +317,6 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         return data;
     }
 
-    // todo DINT for filterpress
     String parseOpcValueToString(Object value, MetricModel metricModel, ThingMetricLabel tml) {
         String destStr = null;
         if (MetricModel.VALUE_TYPE_BOOL.equals(metricModel.getValueType())
@@ -369,7 +390,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
             logger.error(e.getMessage());
         }
 
-        logger.info("StartTime={}", value.getValue().getValue());
+        logger.info("StartTime={}", (value == null) ? null : value.getValue().getValue());
         DataModel dm = parseToDataModel(nodeId, value);
 
         return dm;
@@ -377,8 +398,6 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
     @Override
     public void reload() {
-        isReloading.set(true);
-
         try {
             opcClient.removeSessionActivityListener(this.sessionActivityListener);
             opcClient.disconnect().get();
@@ -389,8 +408,6 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
-
-        isReloading.set(false);
     }
 
 }
