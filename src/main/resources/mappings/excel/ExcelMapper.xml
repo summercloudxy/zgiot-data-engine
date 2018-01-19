@@ -18,7 +18,26 @@
         <result property="qarGap" column="qar_gap"/>
     </resultMap>
 
+    <resultMap id="CoalAnalysisRecordMap" type="com.zgiot.common.pojo.CoalAnalysisRecord">
+        <result property="sample" column="sample"/>
+        <result property="aad" column="aad"/>
+        <result property="mt" column="mt"/>
+        <result property="stad" column="stad"/>
+        <result property="qnetar" column="qnetar"/>
+        <result property="time" column="time"/>
+        <result property="target" column="target"/>
+        <result property="avgDensity" column="avg_density"/>
+        <result property="avgFlow" column="avg_flow"/>
+    </resultMap>
+
     <select id="getExcelRange" resultMap="ExcelRangeMap">
-        SELECT id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap FROM excel_range WHERE state=1
+        SELECT
+        id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap
+        FROM excel_range WHERE state=1 order by sequence
+    </select>
+
+    <select id="getExistRecord" resultMap="CoalAnalysisRecordMap">
+        select sample,target,time,aad,mt,stad,qnetar from tb_coal_analysis where time &lt;= #{endTime} and time &gt;=
+        #{startTime}
     </select>
 </mapper>
