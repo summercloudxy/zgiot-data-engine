@@ -60,12 +60,9 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
 
             // init thread pool
             ThreadManager.getThreadPool();
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    ThreadManager.getThreadPool().shutdown();
-                    System.out.println("Thread pool shutdown. "); //NOPMD
-                }
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                ThreadManager.getThreadPool().shutdown();
+                System.out.println("Thread pool shutdown. "); //NOPMD
             }));
 
         } catch (Throwable e) {

@@ -61,6 +61,7 @@ public class DataEngineServiceImpl implements DataEngineService, Reloader {
     @Override
     public ThingMetricLabel getTMLByLabel(String labelPath) {
         synchronized (this) {
+            // hold on for init
         }
 
         ThingMetricLabel o = LABEL_THING_METRIC_CACHE.get(labelPath);
@@ -73,6 +74,7 @@ public class DataEngineServiceImpl implements DataEngineService, Reloader {
     @Override
     public List<ThingMetricLabel> findAllTML() {
         synchronized (this) {
+            // hold on for init
         }
         return T_M_L_CACHE;
     }
@@ -80,6 +82,7 @@ public class DataEngineServiceImpl implements DataEngineService, Reloader {
     @Override
     public ThingMetricLabel getTMLByTM(String thingCode, String metricCode) {
         synchronized (this) {
+            // hold on for init
         }
         ThingMetricLabel o = TM_L_CACHE.get(thingCode + "_" + metricCode);
         if (o == null) {
@@ -91,6 +94,7 @@ public class DataEngineServiceImpl implements DataEngineService, Reloader {
     @Override
     public ThingModel getThing(String code) {
         synchronized (this) {
+            // hold on for init
         }
 
         ThingModel o = null;
@@ -107,6 +111,7 @@ public class DataEngineServiceImpl implements DataEngineService, Reloader {
     @Override
     public MetricModel getMetric(String code) {
         synchronized (this) {
+            // hold on for init
         }
 
         MetricModel o = null;

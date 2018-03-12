@@ -30,6 +30,7 @@ public class DataReadController {
      * @return
      * @deprecated replace to: #adhocLoadData
      */
+    @Deprecated
     @RequestMapping(
             value = "/sync/{thingCode}/{metricCode}",
             method = RequestMethod.GET,

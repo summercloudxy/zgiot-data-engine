@@ -100,6 +100,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                             Thread.sleep(RETRY_KEP_INTERVAL);
                         } catch (InterruptedException e) {
                             LOGGER.error(e.getMessage());
+                            Thread.currentThread().interrupt();
                         }
 
                         LOGGER.info("OPC UA Session InActive. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
@@ -214,7 +215,6 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
         // check any failed
         if (failedSubsLabelMap.size() > 0) {
-            //throw new RuntimeException("Failed subscription found, pls check your db/kepserver config and restart again! ");
             LOGGER.warn("Subscription failed found. Count is : {}", failedSubsLabelMap.size());
         } else {
             LOGGER.info("Success to subscribe all labels. ");
@@ -275,6 +275,9 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     }
 
     private DataModel parseToDataModel(NodeId nodeId, DataValue value) {
+        if (value == null){
+            return null;
+        }
         DataModel data = new DataModel();
         // e.g.  "XG.XG.1303/PR/CURRENT/0"
         try {

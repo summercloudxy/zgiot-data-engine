@@ -46,24 +46,8 @@ public class CmdSendController {
 
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
-        if (list.size() == 0) {
-            String msg = "Not valid request data.";
-            logEnd(reqId, msg, startMs);
-            return new ResponseEntity<>(
-                    JSON.toJSONString(new ServerResponse(msg
-                            , SysException.EC_UNKNOWN, 0))
-                    , HttpStatus.OK);
-        } else {
-            for (DataModel data : list) {
-                if (data.getThingCode() == null) { // means request body invalid
-                    ServerResponse res = new ServerResponse(
-                            "Not valid request data. The incoming req body: `" + bodyStr + "`", SysException.EC_UNKNOWN, 0);
-                    String resJson = JSON.toJSONString(res);
-                    logEnd(reqId, resJson, startMs);
-                    return new ResponseEntity<String>(resJson, HttpStatus.OK);
-                }
-            }
-        }
+        ResponseEntity<String> errRes = verifyIncomingList(bodyStr, reqId, startMs, list);
+        if (errRes != null) return errRes;
 
         Integer mockValue = handleMockExpectation(req);
         if (mockValue != null) {
@@ -132,6 +116,28 @@ public class CmdSendController {
                 , HttpStatus.OK);
     }
 
+    private ResponseEntity<String> verifyIncomingList(@RequestBody String bodyStr, String reqId, long startMs, List<DataModel> list) {
+        if (list.size() == 0) {
+            String msg = "Not valid request data.";
+            logEnd(reqId, msg, startMs);
+            return new ResponseEntity<>(
+                    JSON.toJSONString(new ServerResponse(msg
+                            , SysException.EC_UNKNOWN, 0))
+                    , HttpStatus.OK);
+        } else {
+            for (DataModel data : list) {
+                if (data.getThingCode() == null) { // means request body invalid
+                    ServerResponse res = new ServerResponse(
+                            "Not valid request data. The incoming req body: `" + bodyStr + "`", SysException.EC_UNKNOWN, 0);
+                    String resJson = JSON.toJSONString(res);
+                    logEnd(reqId, resJson, startMs);
+                    return new ResponseEntity<String>(resJson, HttpStatus.OK);
+                }
+            }
+        }
+        return null;
+    }
+
     private void logAccepted(HttpServletRequest req, String reqId, String bodyStr) {
         if (LOGGER.isDebugEnabled()){
             // headers, body
@@ -184,7 +190,7 @@ public class CmdSendController {
             return "";
         }
 
-        StringBuffer sb = new StringBuffer(DEFAULT_BUFFER_SIZE);
+        StringBuilder sb = new StringBuilder(DEFAULT_BUFFER_SIZE);
         boolean first = true;
         for (String str : errors) {
             if (!first) {
