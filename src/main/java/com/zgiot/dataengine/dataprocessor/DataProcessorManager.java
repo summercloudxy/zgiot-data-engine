@@ -31,7 +31,7 @@ public class DataProcessorManager {
                     }
 
                     if (LOGGER.isTraceEnabled()){
-                        LOGGER.trace("Got data: {}" , data.toString());
+                        LOGGER.trace("Got data: {}" , data);
                     }
 
                     invokeListeners(data);
