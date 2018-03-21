@@ -23,6 +23,16 @@ public class ExcelRange {
 	private Integer stadGap;
 	private Integer qarGap;
 
+	private Integer positive1Point45Gap;
+	private Integer negative1Point45Gap;
+	private Integer positive1Point8Gap;
+	private Integer negative1Point8Gap;
+	private Integer onePoint45To1Point8Gap;
+	private Integer positive50mmGap;
+	private Integer negative50mmGap;
+
+
+
 	public Integer getId() {
 		return id;
 	}
@@ -133,5 +143,61 @@ public class ExcelRange {
 
 	public void setQarGap(Integer qarGap) {
 		this.qarGap = qarGap;
+	}
+
+	public Integer getPositive1Point45Gap() {
+		return positive1Point45Gap;
+	}
+
+	public void setPositive1Point45Gap(Integer positive1Point45Gap) {
+		this.positive1Point45Gap = positive1Point45Gap;
+	}
+
+	public Integer getNegative1Point45Gap() {
+		return negative1Point45Gap;
+	}
+
+	public void setNegative1Point45Gap(Integer negative1Point45Gap) {
+		this.negative1Point45Gap = negative1Point45Gap;
+	}
+
+	public Integer getPositive1Point8Gap() {
+		return positive1Point8Gap;
+	}
+
+	public void setPositive1Point8Gap(Integer positive1Point8Gap) {
+		this.positive1Point8Gap = positive1Point8Gap;
+	}
+
+	public Integer getNegative1Point8Gap() {
+		return negative1Point8Gap;
+	}
+
+	public void setNegative1Point8Gap(Integer negative1Point8Gap) {
+		this.negative1Point8Gap = negative1Point8Gap;
+	}
+
+	public Integer getOnePoint45To1Point8Gap() {
+		return onePoint45To1Point8Gap;
+	}
+
+	public void setOnePoint45To1Point8Gap(Integer onePoint45To1Point8Gap) {
+		this.onePoint45To1Point8Gap = onePoint45To1Point8Gap;
+	}
+
+	public Integer getPositive50mmGap() {
+		return positive50mmGap;
+	}
+
+	public void setPositive50mmGap(Integer positive50mmGap) {
+		this.positive50mmGap = positive50mmGap;
+	}
+
+	public Integer getNegative50mmGap() {
+		return negative50mmGap;
+	}
+
+	public void setNegative50mmGap(Integer negative50mmGap) {
+		this.negative50mmGap = negative50mmGap;
 	}
 }
