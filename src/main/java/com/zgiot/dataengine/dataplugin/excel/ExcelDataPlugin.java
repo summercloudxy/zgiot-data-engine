@@ -85,7 +85,7 @@ public class ExcelDataPlugin implements DataPlugin {
 
     @Override
     public void start() throws Exception {
-
+        logger.info("excel插件开启，读取相关报表数据");
     }
 
     @Override
