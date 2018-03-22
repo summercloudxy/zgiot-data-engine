@@ -47,7 +47,7 @@ public class ExcelDataPlugin implements DataPlugin {
 
     @Override
     public void start() throws Exception {
-
+        logger.info("开始煤质化验插件");
     }
 
     @Override
