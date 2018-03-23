@@ -156,10 +156,14 @@ public class ExcelDataPlugin implements DataPlugin {
                 // 开始解析
                 for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                     sheet = workbook.getSheetAt(i);
+                    logger.debug("开始读取文件第{}个sheet，名为{}",i,sheet.getSheetName());
                     if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
+                        logger.debug("该sheet不以白/夜结尾，不符合班报格式，跳过该sheet读取");
                         continue;
+
                     }
                     List<CoalAnalysisRecord> tlst = new ArrayList<>();
+                    logger.debug("开始按区域读取sheet：{},当前共{}个区域需要读取",sheet.getSheetName(),coalAnalysisExcelRangeList.size());
                     for (ExcelRange excelRange : coalAnalysisExcelRangeList) {
                         tlst.addAll(getCoalAnalysisInfoInArea(excelRange, sheet));
                     }
@@ -245,6 +249,7 @@ public class ExcelDataPlugin implements DataPlugin {
 
 
     private List<CoalAnalysisRecord> getCoalAnalysisInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+        logger.debug("开始读取sheet:{}的{}区域的记录，excelRange为：{}",sheet.getSheetName(),excelRange.getName(),excelRange);
         CoalAnalysisRecord test;
         String target = null;
         HSSFRow row;
@@ -256,9 +261,12 @@ public class ExcelDataPlugin implements DataPlugin {
         Date sheetDate = getSheetDate(sheet);
         // 获取单元格
         for (int i = excelRange.getStartY(); i < excelRange.getStartY() + excelRange.getRow(); i++) {
+            logger.debug("开始读取第{}行数据",i);
             test = new CoalAnalysisRecord();
             row = sheet.getRow(i);
             if (row == null) {
+
+                logger.debug("第{}行没有数据，返回",i);
                 continue;
             }
             // 零、化验类型
@@ -267,6 +275,7 @@ public class ExcelDataPlugin implements DataPlugin {
             // 一、设备编号
             deviceNum = getDeviceCode(excelRange, row, deviceNum);
             if (deviceNum == null) {
+                logger.debug("读取不到该行记录的设备号，返回",i);
                 continue;
             }
             test.setSystem(excelRange.getSystem());
