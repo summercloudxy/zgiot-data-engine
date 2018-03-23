@@ -106,7 +106,7 @@ public class ExcelDataPlugin implements DataPlugin {
         // 读取班报常规流程
         if (baseUri != null) {
             File file = new File(baseUri);
-            LOGGER.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
+            logger.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
             if (file.exists()) {
                 if (file.isDirectory()) {
                     disposeFileInDir(file);
@@ -114,10 +114,10 @@ public class ExcelDataPlugin implements DataPlugin {
 
                 }
             } else {
-                LOGGER.debug("无法连接到指定目录，未做任何操作直接退出！");
+                logger.debug("无法连接到指定目录，未做任何操作直接退出！");
             }
         } else {
-            LOGGER.debug("未配置数据存放路径，未做任何操作直接退出！");
+            logger.debug("未配置数据存放路径，未做任何操作直接退出！");
         }
     }
 
