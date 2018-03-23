@@ -200,4 +200,16 @@ public class ExcelRange {
 	public void setNegative50mmGap(Integer negative50mmGap) {
 		this.negative50mmGap = negative50mmGap;
 	}
+
+	@Override
+	public String toString() {
+		return "ExcelRange{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", system=" + system +
+				", startX=" + startX +
+				", startY=" + startY +
+				", row=" + row +
+				'}';
+	}
 }
