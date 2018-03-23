@@ -1,14 +1,18 @@
 package com.zgiot.dataengine.dataplugin.excel;
 
-import com.zgiot.common.constants.MetricCodes;
-import com.zgiot.common.enums.MetricDataTypeEnum;
+import com.alibaba.fastjson.JSON;
+import com.zgiot.common.constants.CoalAnalysisConstants;
+import com.zgiot.common.pojo.CoalAnalysisRecord;
 import com.zgiot.common.pojo.DataModel;
-import com.zgiot.common.pojo.MetricModel;
+import com.zgiot.common.pojo.ProductionInspectRecord;
+import com.zgiot.common.pojo.ReportFormsRecord;
 import com.zgiot.dataengine.common.queue.QueueManager;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.dao.ExcelMapper;
-import com.zgiot.dataengine.dataplugin.excel.pojo.CoalTestRecord;
 import com.zgiot.dataengine.dataplugin.excel.pojo.ExcelRange;
+import com.zgiot.dataengine.dataplugin.excel.pojo.RecordTimeRange;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -23,31 +27,65 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.*;
 import java.util.*;
 
 @Component
 public class ExcelDataPlugin implements DataPlugin {
     @Autowired
     private ExcelMapper excelMapper;
-    private List<ExcelRange> excelRangeList;
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExcelDataPlugin.class);
-    private static final int READ_MODE_ONE=1;
-    private static final int READ_MODE_TWO=2;
-    private static final int READ_MODE_THREE=3;
-    private static final int DAY_SHIFT_TIME=8;
+    private List<ExcelRange> coalAnalysisExcelRangeList = new ArrayList<>();
+    private List<ExcelRange> productionExcelRangeList = new ArrayList<>();
+    private static final Logger logger = LoggerFactory.getLogger(ExcelDataPlugin.class);
+    /**
+     * target：从excelrange读取
+     * sample：从excel读取
+     * time：记录的时间
+     * eg：末原煤
+     */
+    private static final int READ_MODE_ONE = 1;
+    /**
+     * target：从excel读取
+     * sample：从excel读取
+     * time：记录的时间
+     * eg：块原至末精区域
+     */
+    private static final int READ_MODE_TWO = 2;
+    /**
+     * target：从excelrange读取
+     * sample：从excel读取后截取
+     * time：记录的时间
+     * eg：551生产精煤
+     */
+    private static final int READ_MODE_THREE = 3;
+    /**
+     * target：从excelrange读取
+     * sample：从excel读取后截取
+     * time：当前班次时间
+     * eg：551生产精煤平均
+     */
+    private static final int READ_MODE_FOUR = 4;
+    private static final int DAY_SHIFT_TIME = 8;
+    public static final String ZONE_LOCAL = "GMT+08:00";
+    private static final String COAL_ANALYSIS_EXCEL = "化验班报";
+    private static final String PRODUCTION_EXCEL = "生产检查班报";
     @Value("${excel.uri}")
     private String baseUri;// Excel存放的路径
+    private ThreadLocal<Date> preTime = new ThreadLocal<>();
 
     @Override
-    public void init() throws Exception {
-        excelRangeList= excelMapper.getExcelRange();
+    public void init()  {
+        coalAnalysisExcelRangeList = excelMapper.getExcelRange(COAL_ANALYSIS_EXCEL);
+        productionExcelRangeList = excelMapper.getExcelRange(PRODUCTION_EXCEL);
     }
 
     @Override
     public void start() throws Exception {
-        logger.info("开始煤质化验插件");
+        logger.info("excel插件开启，读取相关报表数据");
     }
 
     @Override
@@ -55,56 +93,24 @@ public class ExcelDataPlugin implements DataPlugin {
         return 0;
     }
 
-    @Scheduled(cron = "0 0/3 * * * ?")
-    public void doUpdate() throws Exception {
-        LOGGER.debug("煤质化验指标更新启动 ...");
+    /**
+     * thingcode:CoalAnalysisConstants.COAL_ANALYSIS/CoalAnalysisConstants.PRODUCTION_INSPECT
+     * metriccode:target
+     * value:record
+     * @throws Exception
+     */
+    @Scheduled(cron = "0 0/1 * * * ?")
+    public void doUpdate() throws IOException, ParseException {
+        logger.debug("煤质化验指标更新启动 ...");
+        preTime.remove();
         // 读取班报常规流程
         if (baseUri != null) {
             File file = new File(baseUri);
             LOGGER.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
             if (file.exists()) {
                 if (file.isDirectory()) {
-                    LOGGER.debug("成功访问煤质化验指标存放目录[\"" + baseUri + "\"]");
-                    LOGGER.debug("开始更新任务...");
-                    File[] testIndexFileLst = file.listFiles((dir, name) -> {
-                        // 文件定位
-                        return name.indexOf("煤质化验班报.xls") > 0;
-                    });
-                    int[] total = {0, 0};
-                    if (testIndexFileLst == null){
-                        LOGGER.error("testIndexFileLst cannot be null");
-                    }else{
-                        for (File testIndexFile : testIndexFileLst) {
-                            LOGGER.debug("搜索到指标文件：[" + testIndexFile.getName() + "]");
-                            LOGGER.debug("初始化指标文件：[" + testIndexFile.getName() + "]");
-                            HSSFWorkbook workbook =
-                                    new HSSFWorkbook(new BufferedInputStream(new FileInputStream(testIndexFile)));
-                            HSSFSheet sheet;
-                            LOGGER.debug("开始检索新的数据表格...");
-                            // 开始解析
-                            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                                sheet = workbook.getSheetAt(i);
-                                if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
-                                    continue;
-                                }
-                                List<CoalTestRecord> tlst = new ArrayList<>();
-                                for(ExcelRange excelRange:excelRangeList){
-                                    tlst.addAll(getTextInfoInArea(excelRange,sheet));
-                                }
-                                if (!tlst.isEmpty()) {
-                                    LOGGER.info("找到新表格[" + sheet.getSheetName() + "],有[" + tlst.size() + "]条数据需要转换！");
-                                    List<DataModel> dataModels = parseToDataModel(tlst);
-                                    Queue q = QueueManager.getQueueCollected();
-                                    q.addAll(dataModels);
-                                    LOGGER.info("表格[" + sheet.getSheetName() + "]数据更新完毕,[" + dataModels.size() + "]条数据添加到队列！");
-                                    total[0] += 1;
-                                    total[1] += dataModels.size();
-                                }
-                            }
-                            workbook.close();
-                        }
-                        LOGGER.info("本次任务统计：更新[" + total[0] + "]个表格，[" + total[1] + "]条记录！");
-                    }
+                    disposeFileInDir(file);
+
 
                 }
             } else {
@@ -115,70 +121,270 @@ public class ExcelDataPlugin implements DataPlugin {
         }
     }
 
-    private List<CoalTestRecord> getTextInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+    private void disposeFileInDir(File file) throws IOException, ParseException {
+        logger.debug("成功访问煤质化验指标存放目录[\"{}\"]" , baseUri);
+        logger.debug("开始更新任务...");
+        File[] coalAnalysisFileLst = file.listFiles((dir, name) ->
+            // 文件定位
+             name.contains("煤质化验班报.xls")
+        );
+        File[] productionCheckFileLst = file.listFiles((dir, name) ->
+            // 文件定位
+            name.contains("生产检查班报.xls")
+        );
+        if (coalAnalysisFileLst == null || coalAnalysisFileLst.length == 0) {
+            logger.debug("找不到煤质化验班报");
+        }else {
+            parseCoalAnalysisFile(coalAnalysisFileLst);
+        }
+        if (productionCheckFileLst == null || productionCheckFileLst.length == 0) {
+            logger.debug("找不到生产检查班报");
+        }else {
+            parseProductionFile(productionCheckFileLst);
+        }
+    }
 
-        CoalTestRecord test;
+    private void parseCoalAnalysisFile(File[] coalAnalysisFileLst) throws IOException, ParseException {
+        int[] total = {0, 0};
+        for (File testIndexFile : coalAnalysisFileLst) {
+            logger.debug("搜索到指标文件：[" + testIndexFile.getName() + "]");
+            logger.debug("初始化指标文件：[" + testIndexFile.getName() + "]");
+            try(HSSFWorkbook workbook =
+                    new HSSFWorkbook(new BufferedInputStream(new FileInputStream(testIndexFile)))) {
+                HSSFSheet sheet;
+                logger.debug("开始检索新的数据表格...");
+                // 开始解析
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    sheet = workbook.getSheetAt(i);
+                    if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
+                        continue;
+                    }
+                    List<CoalAnalysisRecord> tlst = new ArrayList<>();
+                    for (ExcelRange excelRange : coalAnalysisExcelRangeList) {
+                        tlst.addAll(getCoalAnalysisInfoInArea(excelRange, sheet));
+                    }
+                    if (!tlst.isEmpty()) {
+                        disposeNewRecords(total, sheet, tlst);
+                    }
+                }
+            }
+        }
+        logger.info("本次任务统计：更新煤质化验班报[{}]个表格，[{}]条记录！" ,total[0] , total[1] );
+    }
+
+    private void disposeNewRecords(int[] total, HSSFSheet sheet, List<CoalAnalysisRecord> tlst) {
+        RecordTimeRange timeRange = getTimeRange(tlst);
+        List<CoalAnalysisRecord> existRecord = excelMapper.getExistCoalAnalysisRecord(timeRange);
+        Collection<CoalAnalysisRecord> newRecord = CollectionUtils.subtract(tlst, existRecord);
+        if (!newRecord.isEmpty()) {
+            addToCacheQueue(total, sheet, newRecord, COAL_ANALYSIS_EXCEL);
+        }
+    }
+
+
+    private void parseProductionFile(File[] coalAnalysisFileLst) throws IOException, ParseException {
+        int[] total = {0, 0};
+        for (File testIndexFile : coalAnalysisFileLst) {
+            logger.debug("搜索到生产检查文件：[" + testIndexFile.getName() + "]");
+            logger.debug("初始化生产检查文件：[" + testIndexFile.getName() + "]");
+            try(HSSFWorkbook workbook =
+                    new HSSFWorkbook(new BufferedInputStream(new FileInputStream(testIndexFile)))) {
+                HSSFSheet sheet;
+                logger.debug("开始检索生产检查班报新的数据表格...");
+                // 开始解析
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    sheet = workbook.getSheetAt(i);
+                    if (!(sheet.getSheetName().endsWith("白") || sheet.getSheetName().endsWith("夜"))) {
+                        continue;
+                    }
+                    List<ProductionInspectRecord> productionCheckRecords = new ArrayList<>();
+                    for (ExcelRange excelRange : productionExcelRangeList) {
+                        productionCheckRecords.addAll(getProductionInfoInArea(excelRange, sheet));
+                    }
+                    if (!productionCheckRecords.isEmpty()) {
+                        RecordTimeRange timeRange = getTimeRange(productionCheckRecords);
+                        List<ProductionInspectRecord> existRecord = excelMapper.getExistProductionCheckRecord(timeRange);
+                        Collection<ProductionInspectRecord> newRecord = CollectionUtils.subtract(productionCheckRecords, existRecord);
+                        addToCacheQueue(total, sheet, newRecord, PRODUCTION_EXCEL);
+                    }
+                }
+            }
+        }
+        logger.info("本次任务统计：更新生产检查班报[{}]个表格，[{}]条记录！" ,total[0] , total[1]);
+    }
+
+    private void addToCacheQueue(int[] total, HSSFSheet sheet, Collection<? extends ReportFormsRecord> newRecord, String type) {
+        logger.info("找到新表格[{}],有[{}]条数据需要转换！" ,sheet.getSheetName() , newRecord.size() );
+        if (!newRecord.isEmpty()) {
+            List<DataModel> dataModels = parseToDataModel(new ArrayList<>(newRecord),type);
+            Queue q = QueueManager.getQueueCollected();
+            q.addAll(dataModels);
+            logger.info("表格[{}]数据更新完毕,[{}]条数据添加到队列！" , sheet.getSheetName(), dataModels.size() );
+            total[0] += 1;
+            total[1] += dataModels.size();
+        }
+    }
+
+    private RecordTimeRange getTimeRange(List<? extends ReportFormsRecord> records) {
+        Date startTime = null;
+        Date endTime = null;
+        for (ReportFormsRecord record : records) {
+            Date time = record.getTime();
+            if (time == null) {
+                continue;
+            }
+            if (startTime == null || startTime.after(time)) {
+                startTime = time;
+            }
+            if (endTime == null || endTime.before(time)) {
+                endTime = time;
+            }
+        }
+        return new RecordTimeRange(startTime, endTime);
+    }
+
+
+    private List<CoalAnalysisRecord> getCoalAnalysisInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+        CoalAnalysisRecord test;
         String target = null;
         HSSFRow row;
         String deviceNum = null;
-        Date time = null;
         // 存放化验数据列表
-        List<CoalTestRecord> coalTestRecords = new ArrayList<>();
+        List<CoalAnalysisRecord> coalAnalysisRecords = new ArrayList<>();
         // 获取当前sheet日期
-        Date day = getDateString(sheet);
+        // 白班为日期+8:00，夜班为日期+20:00
+        Date sheetDate = getSheetDate(sheet);
         // 获取单元格
         for (int i = excelRange.getStartY(); i < excelRange.getStartY() + excelRange.getRow(); i++) {
-            test = new CoalTestRecord();
+            test = new CoalAnalysisRecord();
             row = sheet.getRow(i);
             if (row == null) {
                 continue;
             }
             // 零、化验类型
-            target = setTarget(excelRange, test, target, row);
+            target = getTarget(excelRange,target, row);
+            test.setTarget(target);
             // 一、设备编号
             deviceNum = getDeviceCode(excelRange, row, deviceNum);
             if (deviceNum == null) {
                 continue;
             }
+            test.setSystem(excelRange.getSystem());
             test.setSample(deviceNum);
             // 二、时间
-            time = setTime(excelRange, test, row, time, day);
-            // 三、灰分
-            if (excelRange.getAadGap() != null) {
-                setAad(excelRange, test, row);
-            }
-            // 四、水分
-            if (excelRange.getMtGap() != null) {
-                setMt(excelRange, test, row);
-            }
-            // 五、硫分
-            if (excelRange.getStadGap() != null) {
-                setStad(excelRange, test, row);
-            }
-            // 六、发热量
-            if (excelRange.getQarGap() != null) {
-                setQnetar(excelRange, test, row);
-            }
+            Date time = getTime(excelRange, row, sheetDate);
+            test.setTime(time);
+            setCoalAnalysisParamValue(excelRange, test, row);
+
             if (!(test.getAad() == null && test.getMt() == null && test.getStad() == null
                     && test.getQnetar() == null)) {
-                coalTestRecords.add(test);
+                coalAnalysisRecords.add(test);
             }
         }
-        return coalTestRecords;
+        return coalAnalysisRecords;
+    }
+
+    private void setCoalAnalysisParamValue(ExcelRange excelRange, CoalAnalysisRecord test, HSSFRow row) {
+        // 三、灰分
+        if (excelRange.getAadGap() != null) {
+            setAad(excelRange, test, row);
+        }
+        // 四、水分
+        if (excelRange.getMtGap() != null) {
+            setMt(excelRange, test, row);
+        }
+        // 五、硫分
+        if (excelRange.getStadGap() != null) {
+            setStad(excelRange, test, row);
+        }
+        // 六、发热量
+        if (excelRange.getQarGap() != null) {
+            setQnetar(excelRange, test, row);
+        }
+    }
+
+    private List<ProductionInspectRecord> getProductionInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+        ProductionInspectRecord record;
+        String target = null;
+        HSSFRow row;
+        String deviceNum = null;
+        // 存放化验数据列表
+        List<ProductionInspectRecord> productionCheckRecords = new ArrayList<>();
+        // 获取当前sheet日期
+        Date day = getSheetDate(sheet);
+        // 获取单元格
+        for (int i = excelRange.getStartY(); i < excelRange.getStartY() + excelRange.getRow(); i++) {
+            record = new ProductionInspectRecord();
+            row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+            // 零、化验类型
+            target = getTarget(excelRange, target, row);
+            record.setTarget(target);
+            record.setSystem(excelRange.getSystem());
+            // 一、设备编号
+            deviceNum = getDeviceCode(excelRange, row, deviceNum);
+            if (deviceNum == null) {
+                continue;
+            }
+            record.setSystem(excelRange.getSystem());
+            record.setSample(deviceNum);
+            // 二、时间
+            Date time = getTime(excelRange, row, day);
+            record.setTime(time);
+            setProductionParamValue(excelRange, record, row);
+
+            if (!record.isEmpty()) {
+                productionCheckRecords.add(record);
+            }
+        }
+        return productionCheckRecords;
+    }
+
+    private void setProductionParamValue(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        // 三、-1.8
+        if (excelRange.getNegative1Point8Gap() != null) {
+            setNegative1Point8(excelRange, record, row);
+        }
+        // 四、+1.8
+        if (excelRange.getPositive1Point8Gap() != null) {
+            setPositive1Point8(excelRange, record, row);
+        }
+        // 五、-1.45
+        if (excelRange.getNegative1Point45Gap() != null) {
+            setNegative1Point45(excelRange, record, row);
+        }
+        // 六、+1.45
+        if (excelRange.getPositive1Point45Gap() != null) {
+            setPositive1Point45(excelRange, record, row);
+        }
+        // 七、1.45-1.8
+        if (excelRange.getOnePoint45To1Point8Gap() != null) {
+            setOnePoint45To1Point8(excelRange, record, row);
+        }
+        // 五、-50mm
+        if (excelRange.getNegative50mmGap() != null) {
+            setNegative50mm(excelRange, record, row);
+        }
+        // 六、+50mm
+        if (excelRange.getPositive50mmGap() != null) {
+            setPositive50mm(excelRange, record, row);
+        }
     }
 
     /**
      * 设置化验项目
+     *
      * @param excelRange
-     * @param test
      * @param target
      * @param row
      * @return
      */
-    private String setTarget(ExcelRange excelRange, CoalTestRecord test, String target, HSSFRow row) {
+    private String getTarget(ExcelRange excelRange, String target, HSSFRow row) {
         HSSFCell cell;
         int readMode = excelRange.getReadMode();
-        if (readMode == READ_MODE_ONE || readMode == READ_MODE_THREE) {
+        if (readMode == READ_MODE_ONE || readMode == READ_MODE_THREE || readMode ==READ_MODE_FOUR) {
             target = excelRange.getName();
         } else if (readMode == READ_MODE_TWO) {
             cell = row.getCell(excelRange.getStartX() + excelRange.getTargetGap());
@@ -186,13 +392,12 @@ public class ExcelDataPlugin implements DataPlugin {
                 target = cell.getStringCellValue();
             }
         }
-        test.setTarget(target);
         return target;
     }
 
 
     private String getDeviceCode(ExcelRange excelRange, HSSFRow row, String deviceNum) {
-        if (excelRange.getReadMode() == READ_MODE_THREE) {
+        if (excelRange.getReadMode() == READ_MODE_THREE || excelRange.getReadMode() == READ_MODE_FOUR) {
             deviceNum = excelRange.getSystem() + excelRange.getName().substring(0, 3);
         } else if (excelRange.getReadMode() == READ_MODE_ONE || excelRange.getReadMode() == READ_MODE_TWO) {
             HSSFCell cell = row.getCell(excelRange.getStartX() + excelRange.getDeviceIdGap());
@@ -207,127 +412,252 @@ public class ExcelDataPlugin implements DataPlugin {
         return deviceNum;
     }
 
+
     /**
      * 设置时间
+     *
      * @param excelRange
-     * @param test
      * @param row
-     * @param time
-     * @param day
-     * @return
+     * @param sheetDate
      */
-    private Date setTime(ExcelRange excelRange, CoalTestRecord test, HSSFRow row, Date time, Date day) {
-        HSSFCell cell = row.getCell(excelRange.getStartX() + excelRange.getTimeGap());
-        if (!isEmptyCell(cell)) {
-            if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
-                Calendar ca = Calendar.getInstance();
-                ca.setTime(cell.getDateCellValue());
-                if (ca.get(Calendar.HOUR_OF_DAY) < DAY_SHIFT_TIME) {
-                    ca.setTime(day);
-                    ca.add(Calendar.DAY_OF_MONTH, 1);
-                } else {
-                    ca.setTime(day);
-                }
-                Date tempDay = ca.getTime();
-                Date tempTime = cell.getDateCellValue();
-                if (tempTime != null) {
-                    ca.setTime(tempTime);
-                    int hour = ca.get(Calendar.HOUR_OF_DAY);
-                    int minute = ca.get(Calendar.MINUTE);
-                    int second = ca.get(Calendar.SECOND);
-                    ca.setTime(tempDay);
-                    ca.add(Calendar.HOUR_OF_DAY, hour);
-                    ca.add(Calendar.MINUTE, minute);
-                    ca.add(Calendar.SECOND, second);
-                    time = ca.getTime();
+    private Date getTime(ExcelRange excelRange,HSSFRow row, Date sheetDate) {
+        int readMode = excelRange.getReadMode();
+        Date currentTime = null;
+        if (readMode == READ_MODE_ONE || readMode == READ_MODE_THREE || readMode ==READ_MODE_TWO) {
+            HSSFCell cell = row.getCell(excelRange.getStartX() + excelRange.getTimeGap());
+            LocalDateTime dateTime = null;
+            LocalDate date = LocalDateTime.ofInstant(Instant.ofEpochMilli(sheetDate.getTime()), ZoneId.of(ZONE_LOCAL)).toLocalDate();
+            if (!isEmptyCell(cell)) {
+                dateTime = getTimeFromCell(cell, dateTime, date);
+            } else {
+                if (preTime.get() != null) {
+                    dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(preTime.get().getTime()), ZoneId.of(ZONE_LOCAL));
                 }
             }
+
+            if (dateTime != null) {
+                currentTime = new Date(dateTime.atZone(ZoneId.of(ZONE_LOCAL)).toInstant().toEpochMilli());
+                preTime.set(currentTime);
+            }
+
         }
-        test.setTime(time);
-        return time;
+        //平均记录以当前班次开始时间作为时间
+        else if (readMode == READ_MODE_FOUR){
+            currentTime = sheetDate;
+        }
+        return currentTime;
+    }
+
+    private LocalDateTime getTimeFromCell(HSSFCell cell, LocalDateTime dateTime, LocalDate date) {
+        if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            Date cellValue = cell.getDateCellValue();
+            LocalTime time = LocalDateTime.ofInstant(Instant.ofEpochMilli(cellValue.getTime()), ZoneId.of(ZONE_LOCAL)).toLocalTime();
+            dateTime = time.atDate(date);
+            if (time.getHour() < DAY_SHIFT_TIME) {
+                dateTime = dateTime.plusDays(1);
+            }
+        }
+        return dateTime;
     }
 
     /**
      * 设置硫分
-     * 
+     *
      * @param excelRange
      * @param test
      * @param row
      */
-    private void setStad(ExcelRange excelRange, CoalTestRecord test, HSSFRow row) {
+    private void setStad(ExcelRange excelRange, CoalAnalysisRecord test, HSSFRow row) {
         HSSFCell cell;
         cell = row.getCell(excelRange.getStartX() + excelRange.getStadGap());
-        if (!isEmptyCell(cell)) {
-            if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
-                test.setStad(cell.getNumericCellValue());
-            }
-        }
+        Double valueInCell = getValueInCell(cell);
+        test.setStad(valueInCell);
     }
 
     /**
      * 设置水分
-     * 
+     *
      * @param excelRange
      * @param test
      * @param row
      */
-    private void setMt(ExcelRange excelRange, CoalTestRecord test, HSSFRow row) {
+    private void setMt(ExcelRange excelRange, CoalAnalysisRecord test, HSSFRow row) {
         HSSFCell cell;
         cell = row.getCell(excelRange.getStartX() + excelRange.getMtGap());
-        if (!isEmptyCell(cell)) {
-            if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
-                test.setMt(cell.getNumericCellValue());
-            }
-        }
+        Double valueInCell = getValueInCell(cell);
+        test.setMt(valueInCell);
     }
 
     /**
      * 设置灰分
-     * 
+     *
      * @param excelRange
      * @param test
      * @param row
      */
-    private void setAad(ExcelRange excelRange, CoalTestRecord test, HSSFRow row) {
+    private void setAad(ExcelRange excelRange, CoalAnalysisRecord test, HSSFRow row) {
         HSSFCell cell;
         cell = row.getCell(excelRange.getStartX() + excelRange.getAadGap());
+        Double value = getValueInCell(cell);
+        test.setAad(value);
+    }
+
+    private Double getValueInCell(HSSFCell cell) {
+        Double value = null;
         if (!isEmptyCell(cell)) {
             if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
-                test.setAad(cell.getNumericCellValue());
+               value = cell.getNumericCellValue();
+            }
+            if (cell.getCellType() == HSSFCell.CELL_TYPE_FORMULA) {
+                if (cell.getCachedFormulaResultType() == HSSFCell.CELL_TYPE_STRING) {
+                    String valueStr = cell.getStringCellValue();
+                    if (!("".equals(valueStr) || valueStr == null)) {
+                        value = Double.parseDouble(valueStr);
+                    }
+                } else if (cell.getCachedFormulaResultType() == HSSFCell.CELL_TYPE_NUMERIC) {
+                    value = cell.getNumericCellValue();
+                }
             }
         }
+        return value;
     }
 
     /**
      * 设置发热量
-     * 
+     *
      * @param excelRange
      * @param test
      * @param row
      */
-    private void setQnetar(ExcelRange excelRange, CoalTestRecord test, HSSFRow row) {
+    private void setQnetar(ExcelRange excelRange, CoalAnalysisRecord test, HSSFRow row) {
         HSSFCell cell = row.getCell(excelRange.getStartX() + excelRange.getQarGap());
+        Double valueInCell = getValueInCell(cell);
+        test.setQnetar(valueInCell);
+    }
 
-        if (!isEmptyCell(cell)) {
-            if (cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
-                test.setQnetar(cell.getNumericCellValue());
-            }
-            if (cell.getCellType() == HSSFCell.CELL_TYPE_FORMULA) {
-                try {
-                    String qnetarStr = cell.getStringCellValue();
-                    if (!("".equals(qnetarStr) || qnetarStr == null)) {
-                        test.setQnetar(Double.parseDouble(qnetarStr));
-                    }
-                } catch (IllegalStateException e) {
-                    test.setQnetar(cell.getNumericCellValue());
-                }
-            }
+    /**
+     * 设置-1.8
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setNegative1Point8(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getNegative1Point8Gap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setNegative1Point8(bigDecimal.doubleValue());
+        }
+    }
+
+    /**
+     * 设置+1.8
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setPositive1Point8(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getPositive1Point8Gap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setPositive1Point8(bigDecimal.doubleValue());
+        }
+    }
+
+
+    /**
+     * 设置-1.45
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setNegative1Point45(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getNegative1Point45Gap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setNegative1Point45(bigDecimal.doubleValue());
+        }
+    }
+
+    /**
+     * 设置+1.45
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setPositive1Point45(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getPositive1Point45Gap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setPositive1Point45(bigDecimal.doubleValue());
+        }
+    }
+
+    /**
+     * 设置1.45-1.8
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setOnePoint45To1Point8(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getOnePoint45To1Point8Gap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setOnePoint45To1Point8(bigDecimal.doubleValue());
+        }
+    }
+
+    /**
+     * 设置-50mm
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setNegative50mm(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getNegative50mmGap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setNegative50mm(bigDecimal.doubleValue());
+        }
+    }
+
+    /**
+     * 设置+50mm
+     *
+     * @param excelRange
+     * @param record
+     * @param row
+     */
+    private void setPositive50mm(ExcelRange excelRange, ProductionInspectRecord record, HSSFRow row) {
+        HSSFCell cell;
+        cell = row.getCell(excelRange.getStartX() + excelRange.getPositive50mmGap());
+        if (!isEmptyCell(cell) && cell.getCellType() == HSSFCell.CELL_TYPE_NUMERIC) {
+            double numericCellValue = cell.getNumericCellValue();
+            BigDecimal bigDecimal = BigDecimal.valueOf(numericCellValue).setScale(2,BigDecimal.ROUND_HALF_UP);
+            record.setPositive50mm(bigDecimal.doubleValue());
         }
     }
 
     /**
      * 判断是否为空单元格
-     * 
+     *
      * @param cell
      * @return
      */
@@ -345,7 +675,7 @@ public class ExcelDataPlugin implements DataPlugin {
      * @param sheet
      * @return
      */
-    private Date getDateString(HSSFSheet sheet) throws ParseException {
+    private Date getSheetDate(HSSFSheet sheet) throws ParseException {
         Date tmp = null;
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日");
         if (sheet.getRow(1) != null) {
@@ -354,53 +684,52 @@ public class ExcelDataPlugin implements DataPlugin {
                 if (tempCell == null) {
                     continue;
                 }
-                if (tempCell.getStringCellValue().indexOf("年") > 0) {
+                if (tempCell.getStringCellValue().contains("年")) {
                     if (tempCell.getCellType() != HSSFCell.CELL_TYPE_BLANK) {
                         tmp = simpleDateFormat.parse(tempCell.getStringCellValue().trim());
                     }
+                    break;
                 }
             }
         }
+        String sheetName = sheet.getSheetName();
+        String mm = sheetName.split("\\.")[0];
+        String dd = sheetName.split("\\.")[1];
+        dd = dd.substring(0, dd.length() - 1);
         if (tmp == null) {
-            String sheetName = sheet.getSheetName();
-            String mm = sheetName.split("\\.")[0];
-            String dd = sheetName.split("\\.")[1];
-            dd = dd.substring(0, dd.length() - 1);
+
             Integer yy = Calendar.getInstance().get(Calendar.YEAR);
             tmp = simpleDateFormat.parse(yy + "年" + mm + "月" + dd + "日");
+        }
+        String shift = sheetName.substring(sheetName.length()-1,sheetName.length());
+        tmp = getDutyHour(tmp, shift);
+        return tmp;
+    }
+
+    private Date getDutyHour(Date tmp, String shift) {
+        if ("白".equals(shift)){
+            tmp= DateUtils.addHours(tmp,8);
+        }else {
+            tmp=DateUtils.addHours(tmp,20);
         }
         return tmp;
     }
 
-    private List<DataModel> parseToDataModel(List<CoalTestRecord> records) {
+    private List<DataModel> parseToDataModel(List<? extends ReportFormsRecord> records,String type) {
         List<DataModel> dataModels = new ArrayList<>();
-        for (CoalTestRecord coalTestRecord : records) {
-            if (coalTestRecord.getAad() != null) {
-                getParamModel(dataModels, coalTestRecord, MetricCodes.ASSAY_AAD, coalTestRecord.getAad());
+        for (ReportFormsRecord record : records) {
+            DataModel dataModel = new DataModel();
+            if (COAL_ANALYSIS_EXCEL.equals(type)) {
+                dataModel.setThingCode(CoalAnalysisConstants.COAL_ANALYSIS);
+            }else if(PRODUCTION_EXCEL.equals(type)){
+                dataModel.setThingCode(CoalAnalysisConstants.PRODUCTION_INSPECT);
             }
-            if (coalTestRecord.getMt() != null) {
-                getParamModel(dataModels, coalTestRecord, MetricCodes.ASSAY_MT, coalTestRecord.getMt());
-            }
-            if (coalTestRecord.getStad() != null) {
-                getParamModel(dataModels, coalTestRecord, MetricCodes.ASSAY_STAD, coalTestRecord.getStad());
-            }
-            if (coalTestRecord.getQnetar() != null) {
-                getParamModel(dataModels, coalTestRecord, MetricCodes.ASSAY_QNETAR, coalTestRecord.getQnetar());
-            }
+            dataModel.setMetricCode(record.getTarget());
+            dataModel.setDataTimeStamp(record.getTime());
+            dataModel.setValue(JSON.toJSONString(record));
+            dataModels.add(dataModel);
         }
         return dataModels;
-    }
-
-    private void getParamModel(List<DataModel> dataModels, CoalTestRecord coalTestRecord, String metricCode,
-            Double value) {
-        DataModel dataModel = new DataModel();
-        dataModel.setMetricDataType(MetricDataTypeEnum.METRIC_DATA_TYPE_OK.getName());
-        dataModel.setThingCode(coalTestRecord.getSample());
-        dataModel.setMetricCategoryCode(MetricModel.CATEGORY_ASSAY);
-        dataModel.setMetricCode(metricCode);
-        dataModel.setDataTimeStamp(coalTestRecord.getTime());
-        dataModel.setValue(String.valueOf(value));
-        dataModels.add(dataModel);
     }
 
 }

@@ -16,9 +16,57 @@
         <result property="mtGap" column="mt_gap"/>
         <result property="stadGap" column="stad_gap"/>
         <result property="qarGap" column="qar_gap"/>
+        <result property="positive1Point45Gap" column="+1.45_gap"/>
+        <result property="negative1Point45Gap" column="-1.45_gap"/>
+        <result property="positive1Point8Gap" column="+1.8_gap"/>
+        <result property="negative1Point8Gap" column="-1.8_gap"/>
+        <result property="onePoint45To1Point8Gap" column="1.45-1.8_gap"/>
+        <result property="positive50mmGap" column="+50mm_gap"/>
+        <result property="negative50mmGap" column="-50mm_gap"/>
+    </resultMap>
+
+    <resultMap id="CoalAnalysisRecordMap" type="com.zgiot.common.pojo.CoalAnalysisRecord">
+        <result property="sample" column="sample"/>
+        <result property="aad" column="aad"/>
+        <result property="mt" column="mt"/>
+        <result property="stad" column="stad"/>
+        <result property="qnetar" column="qnetar"/>
+        <result property="time" column="time"/>
+        <result property="target" column="target"/>
+        <result property="avgDensity" column="avg_density"/>
+        <result property="avgFlow" column="avg_flow"/>
+    </resultMap>
+
+    <resultMap id="ProductionCheckRecordMap" type="com.zgiot.common.pojo.ProductionInspectRecord">
+        <result property="sample" column="sample"/>
+        <result property="positive1Point45" column="+1.45"/>
+        <result property="negative1Point45" column="-1.45"/>
+        <result property="positive1Point8" column="+1.8"/>
+        <result property="negative1Point8" column="-1.8"/>
+        <result property="onePoint45To1Point8" column="1.45-1.8"/>
+        <result property="positive50mm" column="+50mm"/>
+        <result property="negative50mm" column="-50mm"/>
+        <result property="time" column="time"/>
+        <result property="target" column="target"/>
+        <result property="avgDensity" column="avg_density"/>
     </resultMap>
 
     <select id="getExcelRange" resultMap="ExcelRangeMap">
-        SELECT id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap FROM excel_range WHERE state=1
+        SELECT
+        id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap,`+1.45_gap`,`-1.45_gap`,`+1.8_gap`,`-1.8_gap`,`1.45-1.8_gap`,`+50mm_gap`,`-50mm_gap`
+        FROM excel_range WHERE state=1
+        AND excel_type = #{param0}
+        order by sequence
     </select>
+
+    <select id="getExistCoalAnalysisRecord" resultMap="CoalAnalysisRecordMap">
+        select sample,target,time,aad,mt,stad,qnetar from tb_coal_analysis where time &lt;= #{endTime} and time &gt;=
+        #{startTime}
+    </select>
+
+    <select id="getExistProductionCheckRecord" resultMap="ProductionCheckRecordMap">
+         select sample,target,time,`+1.45`,`-1.45`,`+1.8`,`-1.8`,`1.45-1.8`,`+50mm`,`-50mm` from tb_production_inspect where time &lt;= #{endTime} and time &gt;=
+        #{startTime}
+    </select>
+
 </mapper>
