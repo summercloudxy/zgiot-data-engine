@@ -8,7 +8,6 @@ import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.common.restcontroller.ServerResponse;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
-import com.zgiot.dataengine.dataprocessor.upforwarder.HandshakeInterceptor;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import com.zgiot.dataengine.service.DataEngineService;
 import org.slf4j.Logger;
@@ -28,7 +27,8 @@ import java.util.*;
 @RestController
 @RequestMapping(value = "/cmd")
 public class CmdSendController {
-    private static final Logger logger = LoggerFactory.getLogger(CmdSendController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmdSendController.class);
+    private static final int DEFAULT_BUFFER_SIZE = 1000;
 
     @Autowired
     private KepServerDataPlugin kepServerDataCollecter;
@@ -46,24 +46,8 @@ public class CmdSendController {
 
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
-        if (list.size() == 0) {
-            String msg = "Not valid request data.";
-            logEnd(reqId, msg, startMs);
-            return new ResponseEntity<>(
-                    JSON.toJSONString(new ServerResponse(msg
-                            , SysException.EC_UNKNOWN, 0))
-                    , HttpStatus.OK);
-        } else {
-            for (DataModel data : list) {
-                if (data.getThingCode() == null) { // means request body invalid
-                    ServerResponse res = new ServerResponse(
-                            "Not valid request data. The incoming req body: `" + bodyStr + "`", SysException.EC_UNKNOWN, 0);
-                    String resJson = JSON.toJSONString(res);
-                    logEnd(reqId, resJson, startMs);
-                    return new ResponseEntity<String>(resJson, HttpStatus.OK);
-                }
-            }
-        }
+        ResponseEntity<String> errRes = verifyIncomingList(bodyStr, reqId, startMs, list);
+        if (errRes != null) return errRes;
 
         Integer mockValue = handleMockExpectation(req);
         if (mockValue != null) {
@@ -104,13 +88,13 @@ public class CmdSendController {
                     , SysException.EC_UNKNOWN, 0);
         } else {
             // send via KepServer
-            List<String> errors = new ArrayList<>(10);
+            List<String> errors = new ArrayList<>();
             try {
                 // core
                 okCount = this.kepServerDataCollecter.sendCommands(list, errors);
             } catch (Exception e) {
                 logEnd(reqId, e.getMessage(), startMs);
-                throw new SysException(e.getMessage(), SysException.EC_UNKNOWN, 0);
+                throw new SysException(e.getMessage(), SysException.EC_UNKNOWN, 0); // NOPMD
             }
 
             if (okCount < list.size()) {
@@ -132,8 +116,30 @@ public class CmdSendController {
                 , HttpStatus.OK);
     }
 
+    private ResponseEntity<String> verifyIncomingList(@RequestBody String bodyStr, String reqId, long startMs, List<DataModel> list) {
+        if (list.size() == 0) {
+            String msg = "Not valid request data.";
+            logEnd(reqId, msg, startMs);
+            return new ResponseEntity<>(
+                    JSON.toJSONString(new ServerResponse(msg
+                            , SysException.EC_UNKNOWN, 0))
+                    , HttpStatus.OK);
+        } else {
+            for (DataModel data : list) {
+                if (data.getThingCode() == null) { // means request body invalid
+                    ServerResponse res = new ServerResponse(
+                            "Not valid request data. The incoming req body: `" + bodyStr + "`", SysException.EC_UNKNOWN, 0);
+                    String resJson = JSON.toJSONString(res);
+                    logEnd(reqId, resJson, startMs);
+                    return new ResponseEntity<String>(resJson, HttpStatus.OK);
+                }
+            }
+        }
+        return null;
+    }
+
     private void logAccepted(HttpServletRequest req, String reqId, String bodyStr) {
-        if (logger.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()){
             // headers, body
             Map map = new LinkedHashMap();
             map.put("reqId", req.getHeader(GlobalConstants.REQUEST_ID_HEADER_KEY));
@@ -146,7 +152,7 @@ public class CmdSendController {
                 headerMap.put(name, hValue);
             }
 
-            logger.debug("CmdSendAccepted: reqId=`{}`, headers=`{}`, body=`{}` ",
+            LOGGER.debug("CmdSendAccepted: reqId=`{}`, headers=`{}`, body=`{}` ",
                     reqId
                     , JSON.toJSONString(headerMap)
                     , bodyStr
@@ -155,9 +161,9 @@ public class CmdSendController {
     }
 
     private void logEnd(String reqId, String msg, long startMs) {
-        if (logger.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             long duration = System.currentTimeMillis() - startMs;
-            logger.debug("CmdSendEnded: reqId=`{}`, msg=`{}`, drMs=`{}`",
+            LOGGER.debug("CmdSendEnded: reqId=`{}`, msg=`{}`, drMs=`{}`",
                     reqId,
                     msg,
                     duration);
@@ -184,7 +190,7 @@ public class CmdSendController {
             return "";
         }
 
-        StringBuffer sb = new StringBuffer(1000);
+        StringBuilder sb = new StringBuilder(DEFAULT_BUFFER_SIZE);
         boolean first = true;
         for (String str : errors) {
             if (!first) {

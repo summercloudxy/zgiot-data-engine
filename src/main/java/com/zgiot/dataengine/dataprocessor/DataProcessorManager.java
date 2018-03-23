@@ -11,7 +11,7 @@ import java.util.List;
 
 public class DataProcessorManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataProcessorManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessorManager.class);
 
     private List<DataListener> dataListeners = new ArrayList<>();
 
@@ -30,14 +30,14 @@ public class DataProcessorManager {
                         continue;
                     }
 
-                    if (logger.isTraceEnabled()){
-                        logger.trace("Got data: {}" , data.toString());
+                    if (LOGGER.isTraceEnabled()){
+                        LOGGER.trace("Got data: {}" , data);
                     }
 
                     invokeListeners(data);
 
                 } catch (Exception e) {
-                    logger.error("Error: ", e);
+                    LOGGER.error("Error: ", e);
                 }
 
             }

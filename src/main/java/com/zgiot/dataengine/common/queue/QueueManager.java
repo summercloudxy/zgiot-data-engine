@@ -7,15 +7,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class QueueManager {
 
-    private static final Queue<DataModel> fromCollecter = new LinkedBlockingQueue(1000000);
-    private static final Queue<DataModel> preWss = new LinkedBlockingQueue(1000000); // before send to websocket session , buffer here
+    private static final Queue<DataModel> FROM_COLLECTER = new LinkedBlockingQueue(1000000);
+    private static final Queue<DataModel> PREWSS = new LinkedBlockingQueue(1000000); // before send to websocket session , buffer here
 
     public static Queue<DataModel> getQueueCollected() {
-        return fromCollecter;
+        return FROM_COLLECTER;
     }
 
     public static Queue<DataModel> getPreWss() {
-        return preWss;
+        return PREWSS;
     }
 
 }

@@ -18,9 +18,7 @@ import java.util.Queue;
 @RequestMapping(value = "/mockdatatool")
 @Profile("dev")
 public class MockDataToolController {
-    private static final Logger logger = LoggerFactory.getLogger(MockDataToolController.class);
-
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MockDataToolController.class);
 
     /**
      *
@@ -38,25 +36,6 @@ public class MockDataToolController {
 
         return new ResponseEntity<String>(
                 "Mocked item count: " + list.size()
-                , HttpStatus.OK);
-    }
-
-    @RequestMapping(
-            value = "/press",
-            method = RequestMethod.GET)
-    public ResponseEntity<String> testit() {
-
-        int size = 10;
-        long startTime = System.currentTimeMillis();
-        DataModel d = new DataModel("DEV", "1111", "SIG", "CR0", null, null);
-        for (int i = 0; i < size; i++) {
-            DataModel dd = d.clone();
-            dd.setValue(String.valueOf(i));
-            dd.setDataTimeStamp(new Date(startTime + i));
-            QueueManager.getQueueCollected().add(dd);
-        }
-        return new ResponseEntity<String>(
-                "testit"
                 , HttpStatus.OK);
     }
 

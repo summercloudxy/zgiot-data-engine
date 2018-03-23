@@ -10,12 +10,12 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 import java.util.Map;
 
 public class HandshakeInterceptor extends HttpSessionHandshakeInterceptor{
-    private static final Logger logger = LoggerFactory.getLogger(HandshakeInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HandshakeInterceptor.class);
     @Override
     public boolean beforeHandshake(ServerHttpRequest request,
                                    ServerHttpResponse response, WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) throws Exception {
-        logger.info("Before Handshake : "+request.getRemoteAddress().getAddress());
+        LOGGER.info("Before Handshake : "+request.getRemoteAddress().getAddress());
         return super.beforeHandshake(request, response, wsHandler, attributes);
     }
 
@@ -23,7 +23,7 @@ public class HandshakeInterceptor extends HttpSessionHandshakeInterceptor{
     public void afterHandshake(ServerHttpRequest request,
                                ServerHttpResponse response, WebSocketHandler wsHandler,
                                Exception ex) {
-        logger.info("After Handshake : "+request.getRemoteAddress().getAddress());
+        LOGGER.info("After Handshake : "+request.getRemoteAddress().getAddress());
         super.afterHandshake(request, response, wsHandler, ex);
     }
 

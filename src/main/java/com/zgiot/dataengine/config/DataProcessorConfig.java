@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Configuration
 public class DataProcessorConfig {
-    private static final Logger logger = LoggerFactory.getLogger(DataProcessorConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessorConfig.class);
     @Value("${dataengine.datalisteners}")
     String configDataListeners;
 
@@ -46,7 +46,7 @@ public class DataProcessorConfig {
             }
 
             obj.getDataListeners().add(dl);
-            logger.info("DataListener added: {}", dl.getClass());
+            LOGGER.info("DataListener added: {}", dl.getClass());
         }
 
         return obj;

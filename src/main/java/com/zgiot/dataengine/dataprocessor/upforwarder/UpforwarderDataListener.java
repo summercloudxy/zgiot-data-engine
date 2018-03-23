@@ -16,7 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class UpforwarderDataListener implements DataListener {
-    private static final Logger logger = LoggerFactory.getLogger(UpforwarderDataListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpforwarderDataListener.class);
     private static AtomicLong errorCounter = new AtomicLong(0);
     private static final int WARN_PER_ITEM = 10000;
 
@@ -53,7 +53,7 @@ public class UpforwarderDataListener implements DataListener {
         } catch (Exception e) {
             long count = errorCounter.incrementAndGet();
             if ((count % WARN_PER_ITEM) == 1) {
-                logger.warn("Upforwarder buffer maybe full, buffer size is {}, error msg is `{}`.  ", buffer.size()
+                LOGGER.warn("Upforwarder buffer maybe full, buffer size is {}, error msg is `{}`.  ", buffer.size()
                         , e.getMessage());
             }
         }
@@ -67,7 +67,8 @@ public class UpforwarderDataListener implements DataListener {
             return;
         }
 
-        List<DataModel> list = new ArrayList(buffer.size() + 1000);
+        final int RESERVED_SIZE = 1000;
+        List<DataModel> list = new ArrayList(buffer.size() + RESERVED_SIZE);
         buffer.drainTo(list);
         // get from buffer and send them
         errorCounter.set(0);
@@ -81,7 +82,7 @@ public class UpforwarderDataListener implements DataListener {
             synchronized (session) {
                 // send message
                 if (!session.isOpen()) {
-                    logger.warn("Websocket session '{}' is closed ", session);
+                    LOGGER.warn("Websocket session '{}' is closed ", session);
                     continue;
                 }
 
@@ -90,7 +91,7 @@ public class UpforwarderDataListener implements DataListener {
                     try {
                         session.sendMessage(new TextMessage(json));
                     } catch (IOException e) {
-                        logger.error(e.getMessage());
+                        LOGGER.error(e.getMessage());
                     }
                 }
             }
