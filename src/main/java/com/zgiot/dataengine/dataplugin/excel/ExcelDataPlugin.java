@@ -130,7 +130,9 @@ public class ExcelDataPlugin implements DataPlugin {
         );
         File[] productionCheckFileLst = file.listFiles((dir, name) ->
             // 文件定位
-            name.contains("生产检查班报.xls")
+//            name.contains("生产检查班报.xls")
+                //todo
+                false
         );
         if (coalAnalysisFileLst == null || coalAnalysisFileLst.length == 0) {
             logger.debug("找不到煤质化验班报");
