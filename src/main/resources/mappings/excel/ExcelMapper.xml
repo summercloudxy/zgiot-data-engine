@@ -16,13 +16,13 @@
         <result property="mtGap" column="mt_gap"/>
         <result property="stadGap" column="stad_gap"/>
         <result property="qarGap" column="qar_gap"/>
-        <result property="positive1Point45Gap" column="+1.45_gap"/>
-        <result property="negative1Point45Gap" column="-1.45_gap"/>
-        <result property="positive1Point8Gap" column="+1.8_gap"/>
-        <result property="negative1Point8Gap" column="-1.8_gap"/>
-        <result property="onePoint45To1Point8Gap" column="1.45-1.8_gap"/>
-        <result property="positive50mmGap" column="+50mm_gap"/>
-        <result property="negative50mmGap" column="-50mm_gap"/>
+        <result property="positive1Point45Gap" column="param_p1_45_gap"/>
+        <result property="negative1Point45Gap" column="param_n1_45_gap"/>
+        <result property="positive1Point8Gap" column="param_p1_8_gap"/>
+        <result property="negative1Point8Gap" column="param_n1_8_gap"/>
+        <result property="onePoint45To1Point8Gap" column="param_1_45to1_8_gap"/>
+        <result property="positive50mmGap" column="param_p50mm_gap"/>
+        <result property="negative50mmGap" column="param_n50mm_gap"/>
     </resultMap>
 
     <resultMap id="CoalAnalysisRecordMap" type="com.zgiot.common.pojo.CoalAnalysisRecord">
@@ -39,13 +39,13 @@
 
     <resultMap id="ProductionCheckRecordMap" type="com.zgiot.common.pojo.ProductionInspectRecord">
         <result property="sample" column="sample"/>
-        <result property="positive1Point45" column="+1.45"/>
-        <result property="negative1Point45" column="-1.45"/>
-        <result property="positive1Point8" column="+1.8"/>
-        <result property="negative1Point8" column="-1.8"/>
-        <result property="onePoint45To1Point8" column="1.45-1.8"/>
-        <result property="positive50mm" column="+50mm"/>
-        <result property="negative50mm" column="-50mm"/>
+        <result property="negative1Point45" column="param_n1_45"/>
+        <result property="onePoint45To1Point8" column="param_1_45to1_8"/>
+        <result property="positive1Point8" column="param_p1_8"/>
+        <result property="positive1Point45" column="param_p1_45"/>
+        <result property="negative1Point8" column="param_n1_8"/>
+        <result property="positive50mm" column="param_p50mm"/>
+        <result property="negative50mm" column="param_n50mm"/>
         <result property="time" column="time"/>
         <result property="target" column="target"/>
         <result property="avgDensity" column="avg_density"/>
@@ -65,7 +65,7 @@
     </select>
 
     <select id="getExistProductionCheckRecord" resultMap="ProductionCheckRecordMap">
-         select sample,target,time,`+1.45`,`-1.45`,`+1.8`,`-1.8`,`1.45-1.8`,`+50mm`,`-50mm` from tb_production_inspect where time &lt;= #{endTime} and time &gt;=
+         select sample,target,time,`param_n1_45`,`param_1_45to1_8`,`param_p1_8`,`param_p1_45`,`param_n1_8`,`param_p50mm`,`param_n50mm` from tb_production_inspect where time &lt;= #{endTime} and time &gt;=
         #{startTime}
     </select>
 
