@@ -1,7 +1,11 @@
 package com.zgiot.dataengine.config;
 
+import com.alibaba.rocketmq.client.exception.MQClientException;
+import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.MQProducer;
 import com.zgiot.dataengine.dataprocessor.DataListener;
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
+import com.zgiot.dataengine.dataprocessor.rocketmqupforwarder.RocketMqUpforwarderDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderDataListener;
 import com.zgiot.dataengine.dataprocessor.upforwarder.UpforwarderHandler;
 import org.slf4j.Logger;
@@ -31,11 +35,52 @@ public class DataProcessorConfig {
         return obj;
     }
 
+    @Value("#{new Boolean('${dataengine.rocketmq.enabled}')}" )
+    private Boolean rktMqEnabled;
+
+    @Value("${dataengine.rocketmq.nameservers}")
+    private String rktMqNameservers;
+
+    @Value("${dataengine.rocketmq.producer.name}")
+    private String rktMqProducerName;
+
+    @Bean
+    public RocketMqUpforwarderDataListener newRocketUpforwarderDataListener() {
+        if (!this.rktMqEnabled){
+            return null;
+        }
+        return new RocketMqUpforwarderDataListener();
+    }
+
+    @Bean
+    public MQProducer newDefaultMQProducer() {
+        if (!this.rktMqEnabled){
+            LOGGER.info("RocketMQ disabled.");
+            return null;
+        }
+
+        DefaultMQProducer producer = new DefaultMQProducer(this.rktMqProducerName);
+        producer.setNamesrvAddr(this.rktMqNameservers);
+        producer.setRetryTimesWhenSendAsyncFailed(0);
+        try {
+            producer.start();
+            LOGGER.info("RocketMQ started. nameservers=`{}`, producer=`{}` ", this.rktMqNameservers
+                    , this.rktMqProducerName);
+        } catch (MQClientException e) {
+            LOGGER.error("Failed to start MQ producer. ", e);
+            System.exit(2);
+        }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> producer.shutdown()));
+        return producer;
+    }
+
     @Bean
     public DataProcessorManager newDataProcessorManager() {
         Map<String, DataListener> map = new HashMap<>();
         map.put("NONE", null);
         map.put("WSS", newUpforwarderDataListener());
+        map.put("ROCKETMQ", newRocketUpforwarderDataListener());
 
         DataProcessorManager obj = new DataProcessorManager();
         String[] configArr = this.configDataListeners.split(",");
