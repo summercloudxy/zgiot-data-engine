@@ -53,7 +53,7 @@
 
     <select id="getExcelRange" resultMap="ExcelRangeMap">
         SELECT
-        id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap,`+1.45_gap`,`-1.45_gap`,`+1.8_gap`,`-1.8_gap`,`1.45-1.8_gap`,`+50mm_gap`,`-50mm_gap`
+        id,name,system,start_x,start_y,row,read_mode,time_gap,device_code_gap,target_gap,aad_gap,mt_gap,stad_gap,qar_gap,`param_p1_45_gap`,`param_n1_45_gap`,`param_p1_8_gap`,`param_n1_8_gap`,`param_1_45to1_8_gap`,`param_p50mm_gap`,`param_n50mm_gap`
         FROM excel_range WHERE state=1
         AND excel_type = #{param0}
         order by sequence
