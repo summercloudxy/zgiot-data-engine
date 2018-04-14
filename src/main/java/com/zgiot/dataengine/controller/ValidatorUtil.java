@@ -19,9 +19,15 @@ public class ValidatorUtil {
         return err;
     }
 
-    public static ResponseEntity<String> buildResponseEntityOfValidationError(List<String> errorMsgs) {
+    public static ResponseEntity<String> buildResponseEntityOfValidationErrors(List<String> errorMsgs) {
         return new ResponseEntity<>(
                 ServerResponse.buildOkJson(JSON.toJSONString(errorMsgs))
+                , HttpStatus.BAD_REQUEST);
+    }
+
+    public static ResponseEntity<String> buildResponseEntityOfValidationError(String errorMsg) {
+        return new ResponseEntity<>(
+                ServerResponse.buildOkJson(JSON.toJSONString(errorMsg))
                 , HttpStatus.BAD_REQUEST);
     }
 

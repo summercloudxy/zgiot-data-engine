@@ -7,12 +7,17 @@ import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.MetricModel;
 import com.zgiot.common.pojo.ThingModel;
 import com.zgiot.common.restcontroller.ServerResponse;
+import com.zgiot.dataengine.common.DEConstants;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
+import com.zgiot.dataengine.repository.SendLog;
+import com.zgiot.dataengine.repository.TMLMapper;
 import com.zgiot.dataengine.repository.ThingMetricLabel;
 import com.zgiot.dataengine.service.DataEngineService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,16 +39,25 @@ public class CmdSendController {
     private KepServerDataPlugin kepServerDataCollecter;
     @Autowired
     private DataEngineService dataEngineService;
+    @Autowired
+    TMLMapper tmlMapper;
+    @Value("${dataengine.plugins}")
+    String daePlugin;
 
     @RequestMapping(
             value = "/send",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> send(HttpServletRequest req, @RequestBody String bodyStr) {
+
+        if (daePlugin == null || !DEConstants.PLUGIN_KEPSERVER.equals(daePlugin.trim())) {
+            return ValidatorUtil.buildResponseEntityOfValidationError("Only support kepserver plugin, but not enabled? ");
+        }
+
         String reqId = req.getHeader(GlobalConstants.REQUEST_ID_HEADER_KEY);
+        String userUuid = req.getHeader(GlobalConstants.USER_UUID_KEY);
         long startMs = System.currentTimeMillis();
         logAccepted(req, reqId, bodyStr);
-
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
 
         ResponseEntity<String> errRes = verifyIncomingList(bodyStr, reqId, startMs, list);
@@ -57,36 +71,28 @@ public class CmdSendController {
         }
 
         // check data list are all for KepServer
-        List<String> categoryFails = new ArrayList<>();
-        for (DataModel d : list) {
-
-            // overide category value
-            ThingModel thing = this.dataEngineService.getThing(d.getThingCode());
-            MetricModel metric = this.dataEngineService.getMetric(d.getMetricCode());
-            ThingMetricLabel tml = this.dataEngineService.getTMLByTM(d.getThingCode(), d.getMetricCode());
-
-            // validate category
-            if (MetricModel.CATEGORY_SIGNAL.equals(metric.getMetricCategoryCode())) {
-                // convert data type
-                convertData(d, metric, tml);
-                continue;
-            }
-
-            // invalid action
-            categoryFails.add("Thing(code='" + thing.getThingCode()
-                    + "') and Metric(category='" + metric.getMetricCategoryCode()
-                    + "', code='" + metric.getMetricCode()
-                    + "') is not supported to send. ");
-        }
+        List<String> categoryFails = validateData(list);
 
         // do send
         int okCount = 0;
         if (categoryFails.size() > 0) {
-            String msg = "Only support KepServer cmd sending so far. Pls check your requests if contain other category. ";
-            logEnd(reqId, msg, startMs);
-            throw new SysException(msg
-                    , SysException.EC_UNKNOWN, 0);
+            logEnd(reqId, "error happened", startMs);
+            return ValidatorUtil.buildResponseEntityOfValidationErrors(categoryFails);
         } else {
+            // audit log before sending
+            Date now = new Date();
+            for (DataModel dm : list) {
+                SendLog log = new SendLog();
+                log.setDmTime(dm.getDataTimeStamp());
+                log.setMetricCode(dm.getMetricCode());
+                log.setSendTime(now);
+                log.setThingCode(dm.getThingCode());
+                log.setValue(dm.getValue());
+                log.setUserUuid(userUuid);
+
+                this.tmlMapper.insertSendLog(log);
+            }
+
             // send via KepServer
             List<String> errors = new ArrayList<>();
             try {
@@ -110,10 +116,46 @@ public class CmdSendController {
             }
         }
 
-        logEnd(reqId, "OK for all "+okCount, startMs);
+        logEnd(reqId, "OK for all " + okCount, startMs);
         return new ResponseEntity<>(
                 ServerResponse.buildOkJson(okCount)
                 , HttpStatus.OK);
+    }
+
+    private List<String> validateData(List<DataModel> list) {
+        List<String> categoryFails = new ArrayList<>();
+        for (DataModel d : list) {
+
+            // overide category value
+            ThingModel thing = this.dataEngineService.getThing(d.getThingCode());
+            if (thing == null) {
+                categoryFails.add("Thing `" + d.getThingCode() + "` is not exists.");
+            }
+
+            MetricModel metric = this.dataEngineService.getMetric(d.getMetricCode());
+            if (metric == null) {
+                categoryFails.add("Metric `" + d.getMetricCode() + "` is not exists.");
+            }
+
+            ThingMetricLabel tml = this.dataEngineService.getTMLByTM(d.getThingCode(), d.getMetricCode());
+            if (tml == null) {
+                categoryFails.add("TML is not exists. (thingCode=`" + d.getThingCode()
+                        + "`, metricCode=`" + d.getMetricCode() + "`)");
+            }
+
+            if (StringUtils.isBlank(d.getValue())) {
+                categoryFails.add("Data value is required. ");
+            }
+
+            // validate category. reuse this loop for better perf.
+            if (categoryFails.size() == 0) {
+                // convert data type
+                convertData(d, metric, tml);
+                continue;
+            }
+
+        }
+        return categoryFails;
     }
 
     private ResponseEntity<String> verifyIncomingList(@RequestBody String bodyStr, String reqId, long startMs, List<DataModel> list) {
@@ -139,7 +181,7 @@ public class CmdSendController {
     }
 
     private void logAccepted(HttpServletRequest req, String reqId, String bodyStr) {
-        if (LOGGER.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()) {
             // headers, body
             Map map = new LinkedHashMap();
             map.put("reqId", req.getHeader(GlobalConstants.REQUEST_ID_HEADER_KEY));

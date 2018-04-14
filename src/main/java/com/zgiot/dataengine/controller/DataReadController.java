@@ -127,7 +127,7 @@ public class DataReadController {
         }
 
         if (errMsgs.size() > 0) {
-            return ValidatorUtil.buildResponseEntityOfValidationError(errMsgs);
+            return ValidatorUtil.buildResponseEntityOfValidationErrors(errMsgs);
         }
 
         // add to q
