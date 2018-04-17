@@ -50,7 +50,8 @@ public class CmdSendController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> send(HttpServletRequest req, @RequestBody String bodyStr) {
 
-        if (daePlugin == null || !DEConstants.PLUGIN_KEPSERVER.equals(daePlugin.trim())) {
+        if (daePlugin == null || !daePlugin.trim().contains(DEConstants.PLUGIN_KEPSERVER)) {
+            LOGGER.error("Error system config. (dataengine.plugins=`{}`)", this.daePlugin);
             return ValidatorUtil.buildResponseEntityOfValidationError("Only support kepserver plugin, but not enabled? ");
         }
 
