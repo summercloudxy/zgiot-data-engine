@@ -56,7 +56,7 @@ public class CmdSendController {
         }
 
         String reqId = req.getHeader(GlobalConstants.REQUEST_ID_HEADER_KEY);
-        String userUuid = req.getHeader(GlobalConstants.USER_UUID_KEY);
+        String userUuid = req.getHeader(GlobalConstants.USER_UUID);
         long startMs = System.currentTimeMillis();
         logAccepted(req, reqId, bodyStr);
         List<DataModel> list = JSON.parseArray(bodyStr, DataModel.class);
