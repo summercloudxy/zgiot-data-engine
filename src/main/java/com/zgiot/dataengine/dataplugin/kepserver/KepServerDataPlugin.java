@@ -81,13 +81,13 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
 
             this.sessionActivityListener = new SessionActivityListener() {
                 @Override
-                public  void onSessionActive(UaSession session) {
+                public void onSessionActive(UaSession session) {
                     synchronized (KepServerDataPlugin.class) {
                         LOGGER.info("OPC UA Session Active. (id='{}', name='{}')", session.getSessionId(), session.getSessionName());
                         // synchronous connect
                         opcClientConnected.set(true);
 
-                        if (RECONN_THREADS.size()>0){
+                        if (RECONN_THREADS.size() > 0) {
                             RECONN_THREADS.clear();
                         }
                     }
@@ -128,7 +128,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
                         }, threadName);
 
                         reconnDaemon.setDaemon(true);
-                        RECONN_THREADS.put(threadName,reconnDaemon);
+                        RECONN_THREADS.put(threadName, reconnDaemon);
                         reconnDaemon.start();
                         LOGGER.info("Reconnecting KepServer thread `{}` started. ", threadName);
 
@@ -275,7 +275,7 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
     }
 
     private DataModel parseToDataModel(NodeId nodeId, DataValue value) {
-        if (value == null){
+        if (value == null) {
             return null;
         }
         DataModel data = new DataModel();
@@ -381,9 +381,16 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         // synchronous read request via VariableNode
         ThingMetricLabel tml = this.dataEngineService.getTMLByTM(thingCode
                 , metricCode);
+        if (tml == null) {
+            throw new RuntimeException("Tml required. (tc=`"+thingCode+"`,mc=`"+metricCode+"`)");
+        }
+
         String labelPath = tml.getLabelPath();
 
         NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
+        if (opcClient == null) {
+            throw new RuntimeException("opcClient required. (tc=`"+thingCode+"`,mc=`"+metricCode+"`)");
+        }
         VariableNode node = opcClient.getAddressSpace().createVariableNode(nodeId);
 
         DataValue value = null;
@@ -393,8 +400,10 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
             LOGGER.error(e.getMessage());
         }
 
-        LOGGER.info("StartTime={}", (value == null) ? null : value.getValue().getValue());
         DataModel dm = parseToDataModel(nodeId, value);
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("Sync read and got value = `{}`", dm.getValue());
+        }
 
         return dm;
     }

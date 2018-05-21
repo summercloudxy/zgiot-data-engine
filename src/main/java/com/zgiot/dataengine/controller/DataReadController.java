@@ -49,7 +49,14 @@ public class DataReadController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> syncRead(@PathVariable String thingCode, @PathVariable String metricCode) {
-        DataModel dm = kepServerDataCollecter.syncRead(thingCode, metricCode);
+        DataModel dm = null;
+        try {
+            dm = kepServerDataCollecter.syncRead(thingCode, metricCode);
+        } catch (Exception e) {
+            return new ResponseEntity<>(
+                    ServerResponse.buildOkJson(e.getMessage())
+                    , HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         return new ResponseEntity<>(
                 ServerResponse.buildOkJson(dm.getValue())
