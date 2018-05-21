@@ -382,14 +382,14 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         ThingMetricLabel tml = this.dataEngineService.getTMLByTM(thingCode
                 , metricCode);
         if (tml == null) {
-            throw new RuntimeException("Tml required. (tc=`"+thingCode+"`,mc=`"+metricCode+"`)");
+            throw new RuntimeException("Tml required. (tc=`" + thingCode + "`,mc=`" + metricCode + "`)");
         }
 
         String labelPath = tml.getLabelPath();
 
         NodeId nodeId = new NodeId(OPC_NAMESPACE_INDEX, labelPath);
         if (opcClient == null) {
-            throw new RuntimeException("opcClient required. (tc=`"+thingCode+"`,mc=`"+metricCode+"`)");
+            throw new RuntimeException("opcClient required. (tc=`" + thingCode + "`,mc=`" + metricCode + "`)");
         }
         VariableNode node = opcClient.getAddressSpace().createVariableNode(nodeId);
 
@@ -401,7 +401,11 @@ public class KepServerDataPlugin implements DataPlugin, Reloader {
         }
 
         DataModel dm = parseToDataModel(nodeId, value);
-        if (LOGGER.isDebugEnabled()){
+        if (dm == null) {
+            throw new RuntimeException("Return datamodel is null. (tc=`" + thingCode + "`,mc=`" + metricCode + "`)");
+        }
+
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Sync read and got value = `{}`", dm.getValue());
         }
 
