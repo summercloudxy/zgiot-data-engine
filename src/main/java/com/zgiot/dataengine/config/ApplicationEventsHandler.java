@@ -3,6 +3,7 @@ package com.zgiot.dataengine.config;
 import com.zgiot.common.reloader.ServerReloadManager;
 import com.zgiot.dataengine.common.ThreadManager;
 import com.zgiot.dataengine.dataplugin.DataPlugin;
+import com.zgiot.dataengine.dataplugin.chaobiao.ChaoBiaoDataPlugin;
 import com.zgiot.dataengine.dataplugin.excel.ExcelDataPlugin;
 import com.zgiot.dataengine.dataplugin.kepserver.KepServerDataPlugin;
 import com.zgiot.dataengine.dataprocessor.DataProcessorManager;
@@ -32,6 +33,9 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
     @Autowired
     private ExcelDataPlugin excelDataPlugin;
     @Autowired
+    private ChaoBiaoDataPlugin chaoBiaoDataPlugin;
+
+    @Autowired
     private DataEngineService dataEngineService;
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -45,6 +49,7 @@ public class ApplicationEventsHandler implements ApplicationListener<ContextRefr
             map.put("NONE", null);
             map.put("KEPSERVER", kepServerDataPlugin);
             map.put("EXCEL", excelDataPlugin);
+            map.put("CHAOBIAO", chaoBiaoDataPlugin);
 
             String[] pluginNameArr = this.pluginsStr.split(",");
             for (String str : pluginNameArr) {
