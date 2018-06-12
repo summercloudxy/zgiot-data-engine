@@ -2,6 +2,7 @@ package com.zgiot.dataengine.dataplugin.excel;
 
 import com.alibaba.fastjson.JSON;
 import com.zgiot.common.constants.CoalAnalysisConstants;
+import com.zgiot.common.exceptions.SysException;
 import com.zgiot.common.pojo.CoalAnalysisRecord;
 import com.zgiot.common.pojo.DataModel;
 import com.zgiot.common.pojo.ProductionInspectRecord;
@@ -21,13 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,9 +35,11 @@ import java.time.*;
 import java.util.*;
 
 @Component
-public class ExcelDataPlugin implements DataPlugin {
+public class ExcelDataPlugin implements DataPlugin,Runnable {
     @Autowired
     private ExcelMapper excelMapper;
+    @Autowired
+    private TaskScheduler taskScheduler;
     private List<ExcelRange> coalAnalysisExcelRangeList = new ArrayList<>();
     private List<ExcelRange> productionExcelRangeList = new ArrayList<>();
     private static final Logger logger = LoggerFactory.getLogger(ExcelDataPlugin.class);
@@ -84,8 +86,9 @@ public class ExcelDataPlugin implements DataPlugin {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start()  {
         logger.info("excel插件开启，读取相关报表数据");
+        taskScheduler.schedule(this,new CronTrigger("0 0/1 * * * ?"));
     }
 
     @Override
@@ -99,8 +102,7 @@ public class ExcelDataPlugin implements DataPlugin {
      * value:record
      * @throws Exception
      */
-    @Scheduled(cron = "0 0/1 * * * ?")
-    public void doUpdate() throws IOException, ParseException {
+    public void run() {
         logger.debug("煤质化验指标更新启动 ...");
         preTime.remove();
         // 读取班报常规流程
@@ -109,9 +111,7 @@ public class ExcelDataPlugin implements DataPlugin {
             logger.debug("获取数据存放路径[\"{}\"], 是否连接：{}", file.getAbsolutePath(), file.exists());
             if (file.exists()) {
                 if (file.isDirectory()) {
-                    disposeFileInDir(file);
-
-
+                        disposeFileInDir(file);
                 }
             } else {
                 logger.debug("无法连接到指定目录，未做任何操作直接退出！");
@@ -121,7 +121,7 @@ public class ExcelDataPlugin implements DataPlugin {
         }
     }
 
-    private void disposeFileInDir(File file) throws IOException, ParseException {
+    private void disposeFileInDir(File file)  {
         logger.debug("成功访问煤质化验指标存放目录[\"{}\"]" , baseUri);
         logger.debug("开始更新任务...");
         File[] coalAnalysisFileLst = file.listFiles((dir, name) ->
@@ -144,7 +144,7 @@ public class ExcelDataPlugin implements DataPlugin {
         }
     }
 
-    private void parseCoalAnalysisFile(File[] coalAnalysisFileLst) throws IOException, ParseException {
+    private void parseCoalAnalysisFile(File[] coalAnalysisFileLst) {
         int[] total = {0, 0};
         for (File testIndexFile : coalAnalysisFileLst) {
             logger.debug("搜索到指标文件：[" + testIndexFile.getName() + "]");
@@ -171,6 +171,9 @@ public class ExcelDataPlugin implements DataPlugin {
                         disposeNewRecords(total, sheet, tlst);
                     }
                 }
+            }catch (IOException e){
+                logger.error("打开文件{}出错",testIndexFile.getName());
+                throw new SysException(e.getMessage(),SysException.EC_UNKNOWN);
             }
         }
         logger.info("本次任务统计：更新煤质化验班报[{}]个表格，[{}]条记录！" ,total[0] , total[1] );
@@ -186,7 +189,7 @@ public class ExcelDataPlugin implements DataPlugin {
     }
 
 
-    private void parseProductionFile(File[] coalAnalysisFileLst) throws IOException, ParseException {
+    private void parseProductionFile(File[] coalAnalysisFileLst){
         int[] total = {0, 0};
         for (File testIndexFile : coalAnalysisFileLst) {
             logger.debug("搜索到生产检查文件：[" + testIndexFile.getName() + "]");
@@ -212,6 +215,9 @@ public class ExcelDataPlugin implements DataPlugin {
                         addToCacheQueue(total, sheet, newRecord, PRODUCTION_EXCEL);
                     }
                 }
+            }catch (IOException e){
+                logger.error("打开文件{}出错",testIndexFile.getName());
+                throw new SysException(e.getMessage(),SysException.EC_UNKNOWN);
             }
         }
         logger.info("本次任务统计：更新生产检查班报[{}]个表格，[{}]条记录！" ,total[0] , total[1]);
@@ -248,7 +254,7 @@ public class ExcelDataPlugin implements DataPlugin {
     }
 
 
-    private List<CoalAnalysisRecord> getCoalAnalysisInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+    private List<CoalAnalysisRecord> getCoalAnalysisInfoInArea(ExcelRange excelRange, HSSFSheet sheet){
         logger.debug("开始读取sheet:{}的{}区域的记录，excelRange为：{}",sheet.getSheetName(),excelRange.getName(),excelRange);
         CoalAnalysisRecord test;
         String target = null;
@@ -312,7 +318,7 @@ public class ExcelDataPlugin implements DataPlugin {
         }
     }
 
-    private List<ProductionInspectRecord> getProductionInfoInArea(ExcelRange excelRange, HSSFSheet sheet) throws ParseException {
+    private List<ProductionInspectRecord> getProductionInfoInArea(ExcelRange excelRange, HSSFSheet sheet)  {
         ProductionInspectRecord record;
         String target = null;
         HSSFRow row;
@@ -684,7 +690,7 @@ public class ExcelDataPlugin implements DataPlugin {
      * @param sheet
      * @return
      */
-    private Date getSheetDate(HSSFSheet sheet) throws ParseException {
+    private Date getSheetDate(HSSFSheet sheet)  {
         Date tmp = null;
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日");
         if (sheet.getRow(1) != null) {
@@ -695,7 +701,12 @@ public class ExcelDataPlugin implements DataPlugin {
                 }
                 if (tempCell.getStringCellValue().contains("年")) {
                     if (tempCell.getCellType() != HSSFCell.CELL_TYPE_BLANK) {
-                        tmp = simpleDateFormat.parse(tempCell.getStringCellValue().trim());
+                        try {
+                            tmp = simpleDateFormat.parse(tempCell.getStringCellValue().trim());
+                        } catch (ParseException e) {
+                            logger.error("解析日期出错");
+                            throw new SysException(e.getMessage(),SysException.EC_PARSE_FAILED);
+                        }
                     }
                     break;
                 }
@@ -708,7 +719,12 @@ public class ExcelDataPlugin implements DataPlugin {
         if (tmp == null) {
 
             Integer yy = Calendar.getInstance().get(Calendar.YEAR);
-            tmp = simpleDateFormat.parse(yy + "年" + mm + "月" + dd + "日");
+            try {
+                tmp = simpleDateFormat.parse(yy + "年" + mm + "月" + dd + "日");
+            } catch (ParseException e) {
+                logger.error("解析日期出错");
+                throw new SysException(e.getMessage(),SysException.EC_PARSE_FAILED);
+            }
         }
         String shift = sheetName.substring(sheetName.length()-1,sheetName.length());
         tmp = getDutyHour(tmp, shift);
