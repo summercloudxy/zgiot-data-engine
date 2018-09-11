@@ -16,7 +16,7 @@ import java.util.Queue;
 
 @RestController
 @RequestMapping(value = "/mockdatatool")
-@Profile("dev")
+//@Profile("dev")
 public class MockDataToolController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MockDataToolController.class);
 
